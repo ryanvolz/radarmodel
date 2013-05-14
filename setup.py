@@ -31,6 +31,10 @@ else:
 cython_sources = [('radarmodel/libpoint_forward.pyx',
                             [np.get_include(), 'radarmodel/include']),
                   ('radarmodel/libpoint_adjoint.pyx',
+                            [np.get_include(), 'radarmodel/include']),
+                  ('radarmodel/libpoint_forward_alt.pyx',
+                            [np.get_include(), 'radarmodel/include']),
+                  ('radarmodel/libpoint_adjoint_alt.pyx',
                             [np.get_include(), 'radarmodel/include'])]
 
 cmdclass = dict()
@@ -75,6 +79,16 @@ ext_modules = [Extension('radarmodel.libpoint_forward',
                          extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
                Extension('radarmodel.libpoint_adjoint',
                          sources=['radarmodel/libpoint_adjoint.c'],
+                         include_dirs=[np.get_include(), 'radarmodel/include'],
+                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                         extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
+               Extension('radarmodel.libpoint_forward_alt',
+                         sources=['radarmodel/libpoint_forward_alt.c'],
+                         include_dirs=[np.get_include(), 'radarmodel/include'],
+                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                         extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
+               Extension('radarmodel.libpoint_adjoint_alt',
+                         sources=['radarmodel/libpoint_adjoint_alt.c'],
                          include_dirs=[np.get_include(), 'radarmodel/include'],
                          extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
                          extra_link_args=['-O3', '-ffast-math', '-fopenmp'])]

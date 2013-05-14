@@ -35,58 +35,13 @@ ctypedef fused xytype:
     cython.doublecomplex
 
 # These Point forward models implement the equation:
-#     y[m] = \sum_{n,p} 1/N * e^{2*\pi*i*n*m/N} * s[R*m - p] * x[n, p]
+#     y[m] = \sum_{n,p} 1/N * e^{2*\pi*i*n*(R*m - p)/N} * s[R*m - p] * x[n, p]
 # for a given N, R, s[k], and variable x[n, p].
 # The 1/N term is included so that applying this model to the result of
 # the adjoint operation (without scaling) is well-scaled. In other words,
 # the entries of A*Astar along the diagonal equal the norm of s (except
 # for the first len(s) entries, which give the norm of the first entries
 # of s).
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cdef direct_sum(stype[::1] s, xytype[:, ::1] idftmat, Py_ssize_t R, xytype[:, ::1] x):
-    cdef Py_ssize_t L = s.shape[0]
-    cdef Py_ssize_t M = idftmat.shape[0]
-    cdef Py_ssize_t N = idftmat.shape[1]
-    cdef Py_ssize_t m, n, p, pstart, pstop
-    cdef xytype ym
-    cdef stype sk
-
-    cdef np.ndarray y_ndarray
-    cdef xytype[::1] y
-    if xytype is cython.floatcomplex:
-        # we set every entry, so empty is ok
-        y_ndarray = np.PyArray_EMPTY(1, <np.npy_intp*>&M, np.NPY_COMPLEX64, 0)
-    elif xytype is cython.doublecomplex:
-        # we set every entry, so empty is ok
-        y_ndarray = np.PyArray_EMPTY(1, <np.npy_intp*>&M, np.NPY_COMPLEX128, 0)
-    y = y_ndarray
-
-    for m in prange(M, nogil=True):
-        ym = 0
-        pstart = max(0, R*m - L + 1)
-        pstop = min(R*M, R*m + 1)
-        for p in xrange(pstart, pstop):
-            sk = s[R*m - p]
-            for n in xrange(N):
-                ym = ym + sk*idftmat[m, n]*x[n, p]
-        y[m] = ym
-
-    return y_ndarray
-
-def DirectSumCython(stype[::1] s, xytype[:, ::1] idftmat, Py_ssize_t R=1):
-    cdef stype[::1] s2 = s # work around closure scope bug which doesn't include fused arguments
-    cdef xytype[:, ::1] idftmat2 = idftmat # work around closure scope bug which doesn't include fused arguments
-
-    if xytype is cython.floatcomplex:
-        def direct_sum_cython(cython.floatcomplex[:, ::1] x):
-            return direct_sum(s2, idftmat2, R, x)
-    elif xytype is cython.doublecomplex:
-        def direct_sum_cython(cython.doublecomplex[:, ::1] x):
-            return direct_sum(s2, idftmat2, R, x)
-
-    return direct_sum_cython
 
 @cython.cdivision(True)
 @cython.boundscheck(False)

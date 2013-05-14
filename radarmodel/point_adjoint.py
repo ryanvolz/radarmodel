@@ -27,9 +27,17 @@ import libpoint_adjoint
 
 _THREADS = multiprocessing.cpu_count()
 
+__all__ = ['DirectSum', 'DirectSumCython', 'DirectSumNumba',
+           'FreqCodeSparse', 'CodeFreqStrided', 'CodeFreqCython']
+
 # These Point adjoint models implement the equation:
-#     x[n, p] = \sum_m e^{2*\pi*i*n*m/N} * s*[R*m - p] * y[m]
+#     x[n, p] = \sum_m e^{-2*\pi*i*n*m/N} * s*[R*m - p] * y[m]
 # for a given N, R, s*[k], and variable y[m].
+#
+# This amounts to sweeping demodulation of the received signal using the complex
+# conjugate of the transmitted waveform followed by calculation of the Fourier
+# spectrum for segments of the received signal.
+# The Fourier transform is taken with the signal delay intact.
 
 def DirectSum(s, N, M, R=1):
     L = len(s)
@@ -71,10 +79,9 @@ def DirectSumNumba(s, N, M, R=1):
     dftmat = np.exp(-2*np.pi*1j*np.arange(M)*np.arange(N)[:, None]/N)
     dftmat = dftmat.astype(xydtype) # use precision of output
     
-    @jit(restype=xytype[:, ::1], 
-         argtypes=[stype[::1], xytype[:, ::1], xytype[::1]],
+    @jit(argtypes=[xytype[::1]],
          locals=dict(xnp=xytype))
-    def direct_sum(s_conj, dftmat, y):
+    def direct_sum_numba(y):
         x = np.zeros((N, R*M), dtype=y.dtype)
         for n in range(N):
             for p in range(R*M):
@@ -84,15 +91,14 @@ def DirectSumNumba(s, N, M, R=1):
                 #       m >= ceil(p/R) --> m >= floor((p - 1)/R) + 1
                 # Rm - p <= L-1:
                 #       m <= floor((p + L - 1)/R)
-                for m in range((p - 1)//R + 1, min(M, (p + L - 1)//R + 1)):
+                mstart = (p - 1 + R)//R # add R before division to guarantee numerator is positive
+                mstop = min(M, (p + L - 1)//R + 1)
+                for m in range(mstart, mstop):
                     # downshift modulate signal by frequency given by p
                     # then correlate with conjugate of transmitted signal
                     xnp += s_conj[R*m - p]*dftmat[n, m]*y[m]
                 x[n, p] = xnp
         return x
-    
-    def direct_sum_numba(y):
-        return direct_sum(s_conj, dftmat, y)
     
     return direct_sum_numba
 
@@ -206,44 +212,3 @@ def CodeFreqCython(s, N, M, R=1):
     fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
     
     return libpoint_adjoint.CodeFreqCython(s, demodpad, x_aligned, fft, step, N, M, R)
-
-def CodeFreq2Strided(s, N, M, R=1):
-    L = len(s)
-    # use precision (single or double) of s
-    # input and output are always complex
-    xydtype = np.result_type(s.dtype, np.complex64)
-    
-    s_conj = s.conj()
-    
-    ypad = np.zeros(R*M + L - 1, xydtype)
-    # yshifted[p, k] = ypad[k + p]
-    yshifted = np.lib.stride_tricks.as_strided(ypad, (R*M, L), 
-                                               (ypad.itemsize, ypad.itemsize))
-    
-    demodpad = pyfftw.n_byte_align(np.zeros((R*M, N), xydtype), 16)
-    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
-    fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
-    
-    def codefreq2_strided(y):
-        ypad[:R*M:R] = y
-        np.multiply(yshifted, s_conj, demodpad[:, :L])
-        fft.execute() # input is demodpad, output is x_aligned
-        x = np.array(x_aligned.T) # we need a copy, which np.array provides
-        return x
-    
-    return codefreq2_strided
-
-def CodeFreq2Cython(s, N, M, R=1):
-    # use precision (single or double) of s
-    # input and output are always complex
-    xydtype = np.result_type(s.dtype, np.complex64)
-    
-    demodpad = pyfftw.n_byte_align(np.zeros((R*M, N), xydtype), 16)
-    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
-    fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
-    
-    #demodpad = pyfftw.n_byte_align(np.zeros((N, R*M), xydtype), 16)
-    #x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
-    #fft = pyfftw.FFTW(demodpad, x_aligned, axes=(0,), threads=_THREADS)
-    
-    return libpoint_adjoint.CodeFreq2Cython(s, demodpad, x_aligned, fft, M, R)

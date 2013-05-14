@@ -25,8 +25,12 @@ from collections import OrderedDict
 
 import point_forward
 import point_adjoint
+import point_forward_alt
+import point_adjoint_alt
 
-#__all__ = []
+__all__ = ['Adjoint', 'Adjoint_alt', 'Forward', 'Forward_alt', 
+           'measure_adjoint', 'measure_adjoint_alt', 'measure_forward', 'measure_forward_alt',
+           'time_models']
 
 _THREADS = multiprocessing.cpu_count()
 
@@ -39,7 +43,7 @@ def time_models(mlist, x, number=100):
     return times
 
 def measure_forward(s, N, M, R=1, 
-                    number=100, disp=True, meas_all=True):
+                    number=100, disp=True, meas_all=False):
     mlist = [point_forward.CodeFreqSparse(s, N, M, R),
              point_forward.FreqCodeCython(s, N, M, R)]
     if meas_all:
@@ -62,16 +66,59 @@ def measure_forward(s, N, M, R=1,
     times, mlist = zip(*tups)
     return times, mlist
 
+def measure_forward_alt(s, N, M, R=1, 
+                        number=100, disp=True, meas_all=False):
+    mlist = [point_forward_alt.FreqCodeCython(s, N, M, R),
+             point_forward_alt.FreqCodeStrided(s, N, M, R)]
+    if meas_all:
+        mlist.extend([])
+    xshape = (N, R*M)
+    x = np.empty(xshape, np.result_type(s.dtype, np.complex64))
+    x.real = 2*np.random.rand(*xshape) - 1
+    x.imag = 2*np.random.rand(*xshape) - 1
+    times = time_models(mlist, x, number)
+    
+    # sort in order of times
+    tups = zip(times, mlist)
+    tups.sort()
+    
+    if disp:
+        for time, model in tups:
+            print(model.func_name + ': {0} s per call'.format(time/number))
+    
+    times, mlist = zip(*tups)
+    return times, mlist
+
 def measure_adjoint(s, N, M, R=1, 
-                    number=100, disp=True, meas_all=True):
+                    number=100, disp=True, meas_all=False):
     mlist = [point_adjoint.FreqCodeSparse(s, N, M, R),
-             point_adjoint.CodeFreqCython(s, N, M, R),
-             point_adjoint.CodeFreq2Cython(s, N, M, R)]
+             point_adjoint.CodeFreqCython(s, N, M, R)]
     if meas_all:
         mlist.extend([point_adjoint.CodeFreqStrided(s, N, M, R),
-                      point_adjoint.CodeFreq2Strided(s, N, M, R),
                       point_adjoint.DirectSumCython(s, N, M, R),
                       point_adjoint.DirectSumNumba(s, N, M, R)])
+    y = np.empty(M, np.result_type(s.dtype, np.complex64))
+    y.real = 2*np.random.rand(M) - 1
+    y.imag = 2*np.random.rand(M) - 1
+    times = time_models(mlist, y, number)
+    
+    # sort in order of times
+    tups = zip(times, mlist)
+    tups.sort()
+    
+    if disp:
+        for time, model in tups:
+            print(model.func_name + ': {0} s per call'.format(time/number))
+    
+    times, mlist = zip(*tups)
+    return times, mlist
+
+def measure_adjoint_alt(s, N, M, R=1, 
+                        number=100, disp=True, meas_all=False):
+    mlist = [point_adjoint_alt.CodeFreqCython(s, N, M, R),
+             point_adjoint_alt.CodeFreqStrided(s, N, M, R)]
+    if meas_all:
+        mlist.extend([])
     y = np.empty(M, np.result_type(s.dtype, np.complex64))
     y.real = 2*np.random.rand(M) - 1
     y.imag = 2*np.random.rand(M) - 1
@@ -98,6 +145,16 @@ def Forward(s, N, M, R=1, measure=True):
     
     return model
 
+def Forward_alt(s, N, M, R=1, measure=True):
+    if measure is True:
+        times, mlist = measure_forward_alt(s, N, M, R, 
+                                           number=10, disp=False, meas_all=False)
+        model = mlist[np.argmin(times)]
+    else:
+        model = point_adjoint_alt.FreqCodeCython(s, N, M, R)
+    
+    return model
+
 def Adjoint(s, N, M, R=1, measure=True):
     if measure is True:
         times, mlist = measure_adjoint(s, N, M, R,
@@ -105,5 +162,15 @@ def Adjoint(s, N, M, R=1, measure=True):
         model = mlist[np.argmin(times)]
     else:
         model = point_adjoint.CodeFreqStrided(s, N, M, R)
+    
+    return model
+
+def Adjoint_alt(s, N, M, R=1, measure=True):
+    if measure is True:
+        times, mlist = measure_adjoint_alt(s, N, M, R,
+                                           number=10, disp=False, meas_all=False)
+        model = mlist[np.argmin(times)]
+    else:
+        model = point_adjoint_alt.CodeFreqStrided(s, N, M, R)
     
     return model
