@@ -141,7 +141,7 @@ def Forward(s, N, M, R=1, measure=True):
                                        number=10, disp=False, meas_all=False)
         model = mlist[np.argmin(times)]
     else:
-        model = point_adjoint.FreqCodeCython(s, N, M, R)
+        model = point_forward.FreqCodeCython(s, N, M, R)
     
     return model
 
@@ -151,7 +151,7 @@ def Forward_alt(s, N, M, R=1, measure=True):
                                            number=10, disp=False, meas_all=False)
         model = mlist[np.argmin(times)]
     else:
-        model = point_adjoint_alt.FreqCodeCython(s, N, M, R)
+        model = point_forward_alt.FreqCodeCython(s, N, M, R)
     
     return model
 
