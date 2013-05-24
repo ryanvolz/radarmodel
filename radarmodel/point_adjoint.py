@@ -107,6 +107,9 @@ def DirectSumCython(s, N, M, R=1):
     # input and output are always complex
     xydtype = np.result_type(s.dtype, np.complex64)
     
+    # ensure that s is C-contiguous as required by the Cython function
+    s = np.asarray(s, order='C')
+    
     dftmat = np.exp(-2*np.pi*1j*np.arange(M)*np.arange(N)[:, None]/N)
     dftmat = dftmat.astype(xydtype) # use precision of output
     
@@ -206,6 +209,9 @@ def CodeFreqCython(s, N, M, R=1):
     # then subsample to get our N points that we desire
     step = M // N + 1
     nfft = N*step
+    
+    # ensure that s is C-contiguous as required by the Cython function
+    s = np.asarray(s, order='C')
     
     demodpad = pyfftw.n_byte_align(np.zeros((R*M, nfft), xydtype), 16)
     x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)

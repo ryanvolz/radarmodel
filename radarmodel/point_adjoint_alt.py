@@ -116,6 +116,9 @@ def CodeFreqCython(s, N, M, R=1):
     step = L // N + 1
     nfft = N*step
     
+    # ensure that s is C-contiguous as required by the Cython function
+    s = np.asarray(s, order='C')
+    
     demodpad = pyfftw.n_byte_align(np.zeros((R*M, nfft), xydtype), 16)
     x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
     fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)

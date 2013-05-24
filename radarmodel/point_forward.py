@@ -62,6 +62,9 @@ def DirectSumCython(s, N, M, R=1):
     # input and output are always complex
     xydtype = np.result_type(s.dtype, np.complex64)
     
+    # ensure that s is C-contiguous as required by the Cython function
+    s = np.asarray(s, order='C')
+    
     idftmat = np.exp(2*np.pi*1j*np.arange(N)*np.arange(M)[:, None]/N)/N
     idftmat = idftmat.astype(xydtype) # use precision of output
     
@@ -165,6 +168,9 @@ def FreqCodeCython(s, N, M, R=1):
     # use precision (single or double) of s
     # input and output are always complex
     xydtype = np.result_type(s.dtype, np.complex64)
+    
+    # ensure that s is C-contiguous as required by the Cython function
+    s = np.asarray(s, order='C')
     
     x_aligned = pyfftw.n_byte_align(np.zeros((N, R*M), xydtype), 16)
     X = pyfftw.n_byte_align(np.zeros((N, R*M), xydtype), 16)

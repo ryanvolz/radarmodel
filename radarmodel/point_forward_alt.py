@@ -117,6 +117,9 @@ def FreqCodeCython(s, N, M, R=1):
     # input and output are always complex
     xydtype = np.result_type(s.dtype, np.complex64)
     
+    # ensure that s is C-contiguous as required by the Cython function
+    s = np.asarray(s, order='C')
+    
     x_aligned = pyfftw.n_byte_align(np.zeros((N, R*M), xydtype), 16)
     X = pyfftw.n_byte_align(np.zeros((N, R*M), xydtype), 16)
     ifft = pyfftw.FFTW(x_aligned, X, direction='FFTW_BACKWARD', 
