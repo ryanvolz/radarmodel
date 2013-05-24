@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with radarmodel.  If not, see <http://www.gnu.org/licenses/>.
 
+#cython: embedsignature=True
+
 from __future__ import division
 cimport cython
 from cython.parallel import prange
@@ -50,14 +52,14 @@ ctypedef fused xytype:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef codefreq(stype[::1] s_conj, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned, 
-              pyfftw.FFTW fft, Py_ssize_t M, Py_ssize_t R, xytype[::1] y):
+              pyfftw.FFTW fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R,
+              xytype[::1] y):
     cdef Py_ssize_t L = s_conj.shape[0]
-    cdef Py_ssize_t N = demodpad.shape[1]
     cdef Py_ssize_t p, m, k, mstart, mstop
     cdef xytype ym
 
     cdef np.ndarray x_ndarray
-    cdef xytype[:, ::1] x
+    cdef xytype[:, ::view.contiguous] x
     cdef np.npy_intp *xshape = [N, R*M]
     if xytype is cython.floatcomplex:
         # we set every entry, so empty is ok
@@ -89,12 +91,12 @@ cdef codefreq(stype[::1] s_conj, xytype[:, ::1] demodpad, xytype[:, ::1] x_align
             #demodpad[p, k] = s_conj[k]*y[(k + p)//R]
 
     fft.execute() # input is demodpad, output is x_aligned
-    x[:, :] = x_aligned.T
+    x[:, :] = x_aligned.T[::step, :]
 
     return x_ndarray
 
 def CodeFreqCython(stype[::1] s, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned, 
-                   pyfftw.FFTW fft, Py_ssize_t M, Py_ssize_t R):
+                   pyfftw.FFTW fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R):
     cdef xytype[:, ::1] demodpad2 = demodpad # work around closure scope bug which doesn't include fused arguments
     cdef xytype[:, ::1] x_aligned2 = x_aligned # work around closure scope bug which doesn't include fused arguments
 
@@ -102,9 +104,9 @@ def CodeFreqCython(stype[::1] s, xytype[:, ::1] demodpad, xytype[:, ::1] x_align
 
     if xytype is cython.floatcomplex:
         def codefreq_cython(cython.floatcomplex[::1] y):
-            return codefreq(s_conj, demodpad2, x_aligned2, fft, M, R, y)
+            return codefreq(s_conj, demodpad2, x_aligned2, fft, step, N, M, R, y)
     elif xytype is cython.doublecomplex:
         def codefreq_cython(cython.doublecomplex[::1] y):
-            return codefreq(s_conj, demodpad2, x_aligned2, fft, M, R, y)
+            return codefreq(s_conj, demodpad2, x_aligned2, fft, step, N, M, R, y)
 
     return codefreq_cython

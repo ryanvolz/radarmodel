@@ -59,9 +59,9 @@ def check_implementation(models, L, N, M, R, sdtype, xdtype):
 
 def test_forward():
     models = [getattr(point_forward, modelname) for modelname in point_forward.__all__]
-    Ls = (13, 13)
-    Ns = (13, 64)
-    Ms = (37, 37)
+    Ls = (13, 13, 13)
+    Ns = (13, 64, 8)
+    Ms = (37, 37, 37)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
     xdtypes = (np.complex64, np.complex128)
@@ -73,9 +73,9 @@ def test_forward():
 
 def test_forward_alt():
     models = [getattr(point_forward_alt, modelname) for modelname in point_forward_alt.__all__]
-    Ls = (13, 13)
-    Ns = (13, 64)
-    Ms = (37, 37)
+    Ls = (13, 13, 13)
+    Ns = (13, 64, 8)
+    Ms = (37, 37, 37)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
     xdtypes = (np.complex64, np.complex128)

@@ -59,9 +59,9 @@ def check_implementation(models, L, N, M, R, sdtype, ydtype):
 
 def test_adjoint():
     models = [getattr(point_adjoint, modelname) for modelname in point_adjoint.__all__]
-    Ls = (13, 13)
-    Ns = (13, 64)
-    Ms = (37, 37)
+    Ls = (13, 13, 13)
+    Ns = (13, 64, 8)
+    Ms = (37, 37, 37)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
     ydtypes = (np.complex64, np.complex128)
@@ -73,9 +73,9 @@ def test_adjoint():
 
 def test_adjoint_alt():
     models = [getattr(point_adjoint_alt, modelname) for modelname in point_adjoint_alt.__all__]
-    Ls = (13, 13)
-    Ns = (13, 64)
-    Ms = (37, 37)
+    Ls = (13, 13, 13)
+    Ns = (13, 64, 8)
+    Ms = (37, 37, 37)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
     ydtypes = (np.complex64, np.complex128)

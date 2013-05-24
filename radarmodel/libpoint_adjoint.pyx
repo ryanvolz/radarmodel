@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with radarmodel.  If not, see <http://www.gnu.org/licenses/>.
 
+#cython: embedsignature=True
+
 from __future__ import division
 cimport cython
 from cython.parallel import prange
@@ -102,7 +104,6 @@ cdef codefreq(stype[::1] s_conj, xytype[:, ::1] demodpad, xytype[:, ::1] x_align
               pyfftw.FFTW fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R,
               xytype[::1] y):
     cdef Py_ssize_t L = s_conj.shape[0]
-    cdef Py_ssize_t nfft = demodpad.shape[0]
     cdef Py_ssize_t m, p, mstart, mstop
     cdef xytype ym
 

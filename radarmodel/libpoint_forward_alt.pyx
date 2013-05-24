@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with radarmodel.  If not, see <http://www.gnu.org/licenses/>.
 
+
+#cython: embedsignature=True
+
 from __future__ import division
 cimport cython
 from cython.parallel import prange
@@ -49,8 +52,8 @@ ctypedef fused xytype:
 cdef freqcode(stype[::1] s_over_N, xytype[:, ::1] x_aligned, xytype[:, ::1] X, 
               pyfftw.FFTW ifft, Py_ssize_t M, Py_ssize_t R, xytype[:, ::1] x):
     cdef Py_ssize_t L = s_over_N.shape[0]
-    cdef Py_ssize_t N = x_aligned.shape[0]
-    cdef Py_ssize_t m, p, k, pstart, pstop, m_mod_N
+    cdef Py_ssize_t N = X.shape[0]
+    cdef Py_ssize_t m, l, lstart, lstop
     cdef xytype ym
 
     cdef np.ndarray y_ndarray
@@ -65,14 +68,13 @@ cdef freqcode(stype[::1] s_over_N, xytype[:, ::1] x_aligned, xytype[:, ::1] X,
 
     x_aligned[:, :] = x
     ifft.execute() # input is x_aligned, output is X
-    # (smat*X).sum(axis=1) :
+    # (s_over_N*Xstrided).sum(axis=1) :
     for m in prange(M, nogil=True):
         ym = 0
-        m_mod_N = m % N
-        pstart = max(0, R*m - L + 1)
-        pstop = min(R*M, R*m + 1)
-        for p in xrange(pstart, pstop):
-            ym = ym + s_over_N[R*m - p]*X[m_mod_N, p] # no += because of prange
+        lstart = max(0, R*m - R*M + 1)
+        lstop = min(L, R*m + 1)
+        for l in xrange(lstart, lstop):
+            ym = ym + s_over_N[l]*X[l % N, R*m - l] # no += because of prange
         y[m] = ym
 
     return y_ndarray
@@ -87,11 +89,9 @@ def FreqCodeCython(stype[::1] s, xytype[:, ::1] x_aligned, xytype[:, ::1] X,
 
     if xytype is cython.floatcomplex:
         def freqcode_cython(cython.floatcomplex[:, ::1] x):
-            return freqcode(s_over_N, x_aligned2, X2, ifft,
-                            M, R, x)
+            return freqcode(s_over_N, x_aligned2, X2, ifft, M, R, x)
     elif xytype is cython.doublecomplex:
         def freqcode_cython(cython.doublecomplex[:, ::1] x):
-            return freqcode(s_over_N, x_aligned2, X2, ifft,
-                            M, R, x)
+            return freqcode(s_over_N, x_aligned2, X2, ifft, M, R, x)
 
     return freqcode_cython

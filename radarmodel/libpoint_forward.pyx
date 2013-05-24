@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with radarmodel.  If not, see <http://www.gnu.org/licenses/>.
 
+#cython: embedsignature=True
+
 from __future__ import division
 cimport cython
 from cython.parallel import prange
@@ -94,8 +96,8 @@ def DirectSumCython(stype[::1] s, xytype[:, ::1] idftmat, Py_ssize_t R=1):
 cdef freqcode(stype[::1] s_over_N, xytype[:, ::1] x_aligned, xytype[:, ::1] X, 
               pyfftw.FFTW ifft, Py_ssize_t M, Py_ssize_t R, xytype[:, ::1] x):
     cdef Py_ssize_t L = s_over_N.shape[0]
-    cdef Py_ssize_t N = x_aligned.shape[0]
-    cdef Py_ssize_t m, p, k, pstart, pstop, m_mod_N
+    cdef Py_ssize_t N = X.shape[0]
+    cdef Py_ssize_t m, p, pstart, pstop, m_mod_N
     cdef xytype ym
 
     cdef np.ndarray y_ndarray
@@ -132,11 +134,9 @@ def FreqCodeCython(stype[::1] s, xytype[:, ::1] x_aligned, xytype[:, ::1] X,
 
     if xytype is cython.floatcomplex:
         def freqcode_cython(cython.floatcomplex[:, ::1] x):
-            return freqcode(s_over_N, x_aligned2, X2, ifft,
-                            M, R, x)
+            return freqcode(s_over_N, x_aligned2, X2, ifft, M, R, x)
     elif xytype is cython.doublecomplex:
         def freqcode_cython(cython.doublecomplex[:, ::1] x):
-            return freqcode(s_over_N, x_aligned2, X2, ifft,
-                            M, R, x)
+            return freqcode(s_over_N, x_aligned2, X2, ifft, M, R, x)
 
     return freqcode_cython

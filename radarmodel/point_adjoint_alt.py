@@ -27,7 +27,7 @@ import libpoint_adjoint_alt
 
 _THREADS = multiprocessing.cpu_count()
 
-__all__ = ['CodeFreqStrided', 'CodeFreqCython']
+__all__ = ['DirectSum', 'CodeFreqStrided', 'CodeFreqCython']
 
 # These Point adjoint models implement the equation:
 #     x[n, p] = \sum_m e^{-2*\pi*i*n*(R*m - p)/N} * s*[R*m - p] * y[m]
@@ -40,6 +40,33 @@ __all__ = ['CodeFreqStrided', 'CodeFreqCython']
 # spectrum for segments of the received signal.
 # The Fourier transform is taken with the signal delay removed.
 
+def DirectSum(s, N, M, R=1):
+    L = len(s)
+    s_conj = s.conj()
+    # use precision (single or double) of s
+    # input and output are always complex
+    xydtype = np.result_type(s.dtype, np.complex64)
+    
+    def direct_sum(y):
+        x = np.zeros((N, R*M), dtype=xydtype)
+        for n in xrange(N):
+            for p in xrange(R*M):
+                xnp = 0
+                # constraints on m from bounds of s:
+                # Rm - p >= 0:
+                #       m >= ceil(p/R) --> m >= floor((p - 1)/R) + 1
+                # Rm - p <= L-1:
+                #       m <= floor((p + L - 1)/R)
+                for m in xrange((p - 1)//R + 1, min(M, (p + L - 1)//R + 1)):
+                    # downshift modulate signal by frequency given by p
+                    # then correlate with conjugate of transmitted signal
+                    xnp += s_conj[R*m - p]*np.exp(-2*np.pi*1j*n*(R*m - p)/N)*y[m]
+                x[n, p] = xnp
+
+        return x
+    
+    return direct_sum
+
 # CodeFreq implementations apply the code demodulation first, then the 
 # Fourier frequency analysis via FFT
 
@@ -48,6 +75,11 @@ def CodeFreqStrided(s, N, M, R=1):
     # use precision (single or double) of s
     # input and output are always complex
     xydtype = np.result_type(s.dtype, np.complex64)
+    
+    # when N < L, still need to take FFT with nfft >= L so we don't lose data
+    # then subsample to get our N points that we desire
+    step = L // N + 1
+    nfft = N*step
     
     s_conj = s.conj()
     
@@ -60,7 +92,7 @@ def CodeFreqStrided(s, N, M, R=1):
     yshifted = np.lib.stride_tricks.as_strided(ypad, (R*M, L), 
                                                (ypad.itemsize, ypad.itemsize))
     
-    demodpad = pyfftw.n_byte_align(np.zeros((R*M, N), xydtype), 16)
+    demodpad = pyfftw.n_byte_align(np.zeros((R*M, nfft), xydtype), 16)
     x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
     fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
     
@@ -68,17 +100,23 @@ def CodeFreqStrided(s, N, M, R=1):
         ypad[:R*M:R] = y
         np.multiply(yshifted, s_conj, demodpad[:, :L])
         fft.execute() # input is demodpad, output is x_aligned
-        x = np.array(x_aligned.T) # we need a copy, which np.array provides
+        x = np.array(x_aligned[:, ::step].T) # we need a copy, which np.array provides
         return x
     
     return codefreq_strided
 
 def CodeFreqCython(s, N, M, R=1):
+    L = len(s)
     # use precision (single or double) of s
     # input and output are always complex
     xydtype = np.result_type(s.dtype, np.complex64)
     
-    demodpad = pyfftw.n_byte_align(np.zeros((R*M, N), xydtype), 16)
+    # when N < L, still need to take FFT with nfft >= L so we don't lose data
+    # then subsample to get our N points that we desire
+    step = L // N + 1
+    nfft = N*step
+    
+    demodpad = pyfftw.n_byte_align(np.zeros((R*M, nfft), xydtype), 16)
     x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
     fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
     
@@ -86,4 +124,4 @@ def CodeFreqCython(s, N, M, R=1):
     #x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
     #fft = pyfftw.FFTW(demodpad, x_aligned, axes=(0,), threads=_THREADS)
     
-    return libpoint_adjoint_alt.CodeFreqCython(s, demodpad, x_aligned, fft, M, R)
+    return libpoint_adjoint_alt.CodeFreqCython(s, demodpad, x_aligned, fft, step, N, M, R)
