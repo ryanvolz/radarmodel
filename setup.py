@@ -17,7 +17,9 @@
 # You should have received a copy of the GNU General Public License
 # along with radarmodel.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import sys
+import copy
 from distutils.core import setup, Extension, Command
 import numpy as np
 
@@ -28,14 +30,39 @@ except ImportError:
 else:
     cython = True
 
-cython_sources = [('radarmodel/libpoint_forward.pyx',
-                            [np.get_include(), 'radarmodel/include']),
-                  ('radarmodel/libpoint_adjoint.pyx',
-                            [np.get_include(), 'radarmodel/include']),
-                  ('radarmodel/libpoint_forward_alt.pyx',
-                            [np.get_include(), 'radarmodel/include']),
-                  ('radarmodel/libpoint_adjoint_alt.pyx',
-                            [np.get_include(), 'radarmodel/include'])]
+ext_modules = []
+
+cython_modules = [Extension('radarmodel.libpoint_forward',
+                            sources=['radarmodel/libpoint_forward.c'],
+                            include_dirs=[np.get_include(), 'radarmodel/include'],
+                            extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                            extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
+                  Extension('radarmodel.libpoint_adjoint',
+                            sources=['radarmodel/libpoint_adjoint.c'],
+                            include_dirs=[np.get_include(), 'radarmodel/include'],
+                            extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                            extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
+                  Extension('radarmodel.libpoint_forward_alt',
+                            sources=['radarmodel/libpoint_forward_alt.c'],
+                            include_dirs=[np.get_include(), 'radarmodel/include'],
+                            extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                            extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
+                  Extension('radarmodel.libpoint_adjoint_alt',
+                            sources=['radarmodel/libpoint_adjoint_alt.c'],
+                            include_dirs=[np.get_include(), 'radarmodel/include'],
+                            extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                            extra_link_args=['-O3', '-ffast-math', '-fopenmp'])]
+# add C-files from cython modules to extension modules
+ext_modules.extend(cython_modules)
+
+cython_extensions = []
+for c_mod in cython_modules:
+    cython_ext = copy.copy(c_mod)
+    cython_ext.sources = [root + '.pyx' for root, ext 
+                          in map(os.path.splitext, c_mod.sources) 
+                          if ext.lower() == '.c']
+    
+    cython_extensions.append(cython_ext)
 
 cmdclass = dict()
 
@@ -58,40 +85,20 @@ if cython:
         def run(self):
             results = CompilationResultSet()
             
-            for source, include_path in cython_sources:
-                res = compile([source],
-                              include_path=include_path,
+            for cython_ext in cython_extensions:                
+                res = compile(cython_ext.sources,
+                              include_path=cython_ext.include_dirs,
                               verbose=True,
                               timestamps=self.timestamps,
                               annotate=self.annotate)
                 if res:
-                    results.add(source, res.values()[0])
+                    results.update(res)
+                    results.num_errors += res.num_errors
             
             if results.num_errors > 0:
                 sys.stderr.write('Cython compilation failed!')
 
     cmdclass['cython'] = CythonCommand
-
-ext_modules = [Extension('radarmodel.libpoint_forward',
-                         sources=['radarmodel/libpoint_forward.c'],
-                         include_dirs=[np.get_include(), 'radarmodel/include'],
-                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
-                         extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
-               Extension('radarmodel.libpoint_adjoint',
-                         sources=['radarmodel/libpoint_adjoint.c'],
-                         include_dirs=[np.get_include(), 'radarmodel/include'],
-                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
-                         extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
-               Extension('radarmodel.libpoint_forward_alt',
-                         sources=['radarmodel/libpoint_forward_alt.c'],
-                         include_dirs=[np.get_include(), 'radarmodel/include'],
-                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
-                         extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
-               Extension('radarmodel.libpoint_adjoint_alt',
-                         sources=['radarmodel/libpoint_adjoint_alt.c'],
-                         include_dirs=[np.get_include(), 'radarmodel/include'],
-                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
-                         extra_link_args=['-O3', '-ffast-math', '-fopenmp'])]
 
 setup(name='radarmodel',
       version='0.1-dev',
@@ -111,6 +118,5 @@ setup(name='radarmodel',
                    'Topic :: Scientific/Engineering'],
       packages=['radarmodel'],
       package_data={'radarmodel': ['include/*']},
-      data_files=[('', list(zip(*cython_sources)[0]))],
       cmdclass=cmdclass,
       ext_modules=ext_modules)

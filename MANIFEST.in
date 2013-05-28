@@ -1,3 +1,7 @@
+include radarmodel/libpoint_adjoint.pyx
+include radarmodel/libpoint_adjoint_alt.pyx
+include radarmodel/libpoint_forward.pyx
+include radarmodel/libpoint_forward_alt.pyx
 include LICENSE
 include optional_requirements.txt
 include requirements.txt
