@@ -23,10 +23,10 @@ import multiprocessing
 import timeit
 from collections import OrderedDict
 
-import point_forward
-import point_adjoint
-import point_forward_alt
-import point_adjoint_alt
+from . import point_forward
+from . import point_adjoint
+from . import point_forward_alt
+from . import point_adjoint_alt
 
 __all__ = ['Adjoint', 'Adjoint_alt', 'Forward', 'Forward_alt', 
            'measure_adjoint', 'measure_adjoint_alt', 'measure_forward', 'measure_forward_alt',

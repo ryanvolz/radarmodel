@@ -19,8 +19,8 @@ import numpy as np
 import unittest
 import itertools
 
-import point_adjoint
-import point_adjoint_alt
+from radarmodel import point_adjoint
+from radarmodel import point_adjoint_alt
 
 def get_random_uniform(shape, dtype):
     x = np.empty(shape, dtype)

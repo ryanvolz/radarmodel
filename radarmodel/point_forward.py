@@ -21,7 +21,7 @@ import scipy.sparse as sparse
 import pyfftw
 import multiprocessing
 
-import libpoint_forward
+from radarmodel import libpoint_forward
 
 _THREADS = multiprocessing.cpu_count()
 

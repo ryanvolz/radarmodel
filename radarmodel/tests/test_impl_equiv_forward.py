@@ -19,8 +19,8 @@ import numpy as np
 import unittest
 import itertools
 
-import point_forward
-import point_forward_alt
+from radarmodel import point_forward
+from radarmodel import point_forward_alt
 
 def get_random_uniform(shape, dtype):
     x = np.empty(shape, dtype)

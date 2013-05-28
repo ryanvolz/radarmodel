@@ -1,4 +1,4 @@
 """
 
 """
-import point
+from . import point

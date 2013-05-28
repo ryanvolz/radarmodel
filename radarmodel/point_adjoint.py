@@ -23,7 +23,7 @@ import scipy.sparse as sparse
 import pyfftw
 import multiprocessing
 
-import libpoint_adjoint
+from radarmodel import libpoint_adjoint
 
 _THREADS = multiprocessing.cpu_count()
 
