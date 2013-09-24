@@ -22,15 +22,7 @@ import itertools
 from radarmodel import point_adjoint
 from radarmodel import point_adjoint_alt
 
-def get_random_uniform(shape, dtype):
-    x = np.empty(shape, dtype)
-    x.real = 2*np.random.rand(*shape) - 1
-    if np.iscomplexobj(x):
-        x.imag = 2*np.random.rand(*shape) - 1
-    return x
-
-def get_random_oncircle(shape, dtype):
-    return np.exp(2*np.pi*1j*np.random.rand(*shape)).astype(dtype)
+from util import get_random_uniform, get_random_oncircle
 
 def check_implementation(models, L, N, M, R, sdtype, ydtype):
     s = get_random_oncircle((L,), sdtype)
