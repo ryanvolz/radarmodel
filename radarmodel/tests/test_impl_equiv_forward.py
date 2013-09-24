@@ -38,7 +38,11 @@ def check_implementation(models, L, N, M, R, sdtype, xdtype):
         y0 = refmodel(x)
         for model in models[1:]:
             y1 = model(x)
-            np.testing.assert_array_almost_equal(y0, y1, err_msg=err_msg.format(model.func_name, refmodel.func_name))
+            try:
+                np.testing.assert_array_almost_equal_nulp(y0, y1, nulp=10000)
+            except AssertionError as e:
+                e.args += (err_msg.format(model.func_name, refmodel.func_name),)
+                raise
     
     call.description = 's={0}({1}), x={2}({3}, {4}), R={5}'.format(np.dtype(sdtype).str,
                                                                    L,
@@ -58,6 +62,8 @@ def test_forward():
     sdtypes = (np.float32, np.complex128)
     xdtypes = (np.complex64, np.complex128)
     
+    np.random.seed(1)
+    
     for (L, N, M), R, (sdtype, xdtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, xdtypes)):
         callable_test = check_implementation(models, L, N, M, R, sdtype, xdtype)
         callable_test.description = 'test_forward: ' + callable_test.description
@@ -71,6 +77,8 @@ def test_forward_alt():
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
     xdtypes = (np.complex64, np.complex128)
+    
+    np.random.seed(2)
     
     for (L, N, M), R, (sdtype, xdtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, xdtypes)):
         callable_test = check_implementation(models, L, N, M, R, sdtype, xdtype)

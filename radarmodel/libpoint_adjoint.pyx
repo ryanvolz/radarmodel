@@ -38,7 +38,7 @@ ctypedef fused xytype:
     cython.doublecomplex
 
 # These Point adjoint models implement the equation:
-#     x[n, p] = \sum_m e^{-2*\pi*i*n*m/N} * s*[R*m - p] * y[m]
+#     x[n, p] = \sum_m 1/sqrt(N) * e^{-2*\pi*i*n*m/N} * s*[R*m - p] * y[m]
 # for a given N, R, s*[k], and variable y[m].
 #
 # This amounts to sweeping demodulation of the received signal using the complex
@@ -100,10 +100,10 @@ def DirectSumCython(stype[::1] s, xytype[:, ::1] dftmat, Py_ssize_t R=1):
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef codefreq(stype[::1] s_conj, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned, 
+cdef codefreq(stype[::1] s_conj_over_sqrtN, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned, 
               pyfftw.FFTW fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R,
               xytype[::1] y):
-    cdef Py_ssize_t L = s_conj.shape[0]
+    cdef Py_ssize_t L = s_conj_over_sqrtN.shape[0]
     cdef Py_ssize_t m, p, mstart, mstop
     cdef xytype ym
 
@@ -128,7 +128,7 @@ cdef codefreq(stype[::1] s_conj, xytype[:, ::1] demodpad, xytype[:, ::1] x_align
         mstart = (p - 1 + R)//R # add R before division to guarantee numerator is positive
         mstop = min(M, (p + L - 1)//R + 1)
         for m in xrange(mstart, mstop):
-            demodpad[p, m] = s_conj[R*m - p]*y[m]
+            demodpad[p, m] = s_conj_over_sqrtN[R*m - p]*y[m]
 
     fft.execute() # input is demodpad, output is x_aligned
     x[:, :] = x_aligned.T[::step, :]
@@ -140,13 +140,13 @@ def CodeFreqCython(stype[::1] s, xytype[:, ::1] demodpad, xytype[:, ::1] x_align
     cdef xytype[:, ::1] demodpad2 = demodpad # work around closure scope bug which doesn't include fused arguments
     cdef xytype[:, ::1] x_aligned2 = x_aligned # work around closure scope bug which doesn't include fused arguments
 
-    cdef stype[::1] s_conj = np.conj(s)
+    cdef stype[::1] s_conj_over_sqrtN = np.conj(s)/np.sqrt(N)
 
     if xytype is cython.floatcomplex:
         def codefreq_cython(cython.floatcomplex[::1] y):
-            return codefreq(s_conj, demodpad2, x_aligned2, fft, step, N, M, R, y)
+            return codefreq(s_conj_over_sqrtN, demodpad2, x_aligned2, fft, step, N, M, R, y)
     elif xytype is cython.doublecomplex:
         def codefreq_cython(cython.doublecomplex[::1] y):
-            return codefreq(s_conj, demodpad2, x_aligned2, fft, step, N, M, R, y)
+            return codefreq(s_conj_over_sqrtN, demodpad2, x_aligned2, fft, step, N, M, R, y)
 
     return codefreq_cython

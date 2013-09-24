@@ -22,58 +22,48 @@ from radarmodel import point_forward, point_adjoint, point_forward_alt, point_ad
 
 from util import get_random_normal, get_random_oncircle
 
-def opnorm(A, Astar, inshape, indtype, reltol=1e-8, abstol=1e-6, maxits=100, printrate=None):
-    """Estimate the l2-induced operator norm: sup_v ||A(v)||/||v|| for v != 0.
+def adjointness_error(A, Astar, inshape, indtype, its=100):
+    """Check adjointness of A and Astar for 'its' instances of random data.
     
-    Uses the power iteration method to estimate the operator norm of
-    A and Astar.
+    For random unit-normed x and y, this finds the error in the adjoint 
+    identity <Ax, y> == <x, A*y>:
+        err = abs( vdot(A(x), y) - vdot(x, Astar(y)) ).
     
     The type and shape of the input to A are specified by inshape and indtype.
     
-    Returns a tuple: (norm of A, norm of Astar, vector inducing maximum scaling).
-    """
-    v0 = get_random_normal(inshape, indtype)
-    v = v0/np.linalg.norm(v0)
-    norm_f0 = 1
-    norm_a0 = 1
-    for k in xrange(maxits):
-        Av = A(v)
-        norm_f = np.linalg.norm(Av)
-        w = Av/norm_f
-        Asw = Astar(w)
-        norm_a = np.linalg.norm(Asw)
-        v = Asw/norm_a
-        
-        delta_f = abs(norm_f - norm_f0)
-        delta_a = abs(norm_a - norm_a0)
-        
-        if printrate is not None and (k % printrate) == 0:
-            print('Iteration {0}, forward norm: {1}, adjoint norm: {2}'.format(k, norm_f, norm_a))
-        if (delta_f < abstol + reltol*max(norm_f, norm_f0)
-            and delta_a < abstol + reltol*max(norm_a, norm_a0)):
-            break
-        
-        norm_f0 = norm_f
-        norm_a0 = norm_a
+    Returns a vector of the error magnitudes.
     
-    return norm_f, norm_a, v
+    """
+    x = get_random_normal(inshape, indtype)
+    y = A(x)
+    outshape = y.shape
+    outdtype = y.dtype
+    
+    errs = np.zeros(its, dtype=indtype)
+    for k in xrange(its):
+        x = get_random_normal(inshape, indtype)
+        x = x/np.linalg.norm(x)
+        y = get_random_normal(outshape, outdtype)
+        y = y/np.linalg.norm(y)
+        ip_A = np.vdot(A(x), y)
+        ip_Astar = np.vdot(x, Astar(y))
+        errs[k] = np.abs(ip_A - ip_Astar)
+    
+    return errs
 
-def check_opnorm(formodel, adjmodel, L, N, M, R, sdtype, xdtype):
+def check_adjointness(formodel, adjmodel, L, N, M, R, sdtype, xdtype):
     s = get_random_oncircle((L,), sdtype)
     s = s/np.linalg.norm(s)
     
     A = formodel(s, N, M, R)
     Astar = adjmodel(s, N, M, R)
     
-    true_Anorm = 1
-    true_Asnorm = 1
-    
-    err_msg = 'Estimated {0} norm ({1}) does not match true {0} norm ({2})'
+    err_msg = '{0} and {1} are not adjoints, with max error of {2}'
     
     def call():
-        Anorm, Asnorm, v = opnorm(A, Astar, (N, R*M), xdtype, reltol=1e-10, abstol=1e-8, maxits=100)
-        np.testing.assert_allclose(Anorm, true_Anorm, rtol=1e-4, atol=1e-2, err_msg=err_msg.format('forward', Anorm, true_Anorm))
-        np.testing.assert_allclose(Asnorm, true_Asnorm, rtol=1e-4, atol=1e-2, err_msg=err_msg.format('adjoint', Asnorm, true_Asnorm))
+        errs = adjointness_error(A, Astar, (N, R*M), xdtype, its=100)
+        np.testing.assert_array_almost_equal(errs, 0, 
+            err_msg=err_msg.format(formodel.func_name, adjmodel.func_name, np.max(np.abs(errs))))
     
     call.description = 's={0}({1}), x={2}({3}), N={4}, R={5}'.format(np.dtype(sdtype).str,
                                                                      L,
@@ -84,7 +74,7 @@ def check_opnorm(formodel, adjmodel, L, N, M, R, sdtype, xdtype):
     
     return call
 
-def test_opnorm():
+def test_adjointness():
     Afun = point_forward.FreqCodeCython
     Astarfun = point_adjoint.CodeFreqCython
     Ls = (13, 13, 13)
@@ -97,11 +87,11 @@ def test_opnorm():
     np.random.seed(1)
     
     for (L, N, M), R, (sdtype, xdtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, xdtypes)):
-        callable_test = check_opnorm(Afun, Astarfun, L, N, M, R, sdtype, xdtype)
-        callable_test.description = 'test_opnorm: ' + callable_test.description
+        callable_test = check_adjointness(Afun, Astarfun, L, N, M, R, sdtype, xdtype)
+        callable_test.description = 'test_adjointness: ' + callable_test.description
         yield callable_test
 
-def test_opnorm_alt():
+def test_adjointness_alt():
     Afun = point_forward_alt.FreqCodeCython
     Astarfun = point_adjoint_alt.CodeFreqCython
     Ls = (13, 13, 13)
@@ -114,8 +104,8 @@ def test_opnorm_alt():
     np.random.seed(2)
     
     for (L, N, M), R, (sdtype, xdtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, xdtypes)):
-        callable_test = check_opnorm(Afun, Astarfun, L, N, M, R, sdtype, xdtype)
-        callable_test.description = 'test_opnorm_alt: ' + callable_test.description
+        callable_test = check_adjointness(Afun, Astarfun, L, N, M, R, sdtype, xdtype)
+        callable_test.description = 'test_adjointness_alt: ' + callable_test.description
         yield callable_test
 
 if __name__ == '__main__':

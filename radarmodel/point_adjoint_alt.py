@@ -30,15 +30,20 @@ _THREADS = multiprocessing.cpu_count()
 __all__ = ['DirectSum', 'CodeFreqStrided', 'CodeFreqCython']
 
 # These Point adjoint models implement the equation:
-#     x[n, p] = \sum_m e^{-2*\pi*i*n*(R*m - p)/N} * s*[R*m - p] * y[m]
+#     x[n, p] = \sum_m 1/sqrt(N) * e^{-2*\pi*i*n*(R*m - p)/N} * s*[R*m - p] * y[m]
 # for a given N, R, s*[k], and variable y[m].
-#             = \sum_k e^{-2*\pi*i*n*k/N} * s*[k] * y_R[k + p]
+#             = \sum_k 1/sqrt(N) * e^{-2*\pi*i*n*k/N} * s*[k] * y_R[k + p]
 # where y_R = upsampled y by R (insert R-1 zeros after each original element).
 #
 # This amounts to sweeping demodulation of the received signal using the complex
 # conjugate of the transmitted waveform followed by calculation of the Fourier
 # spectrum for segments of the received signal.
 # The Fourier transform is taken with the signal delay removed.
+# The 1/sqrt(N) term is included so that applying the forward model (with same
+# scaling) to the result of this adjoint operation is well-scaled. In other 
+# words, the entries of A*Astar along the diagonal equal the norm of s (except
+# for the first len(s) entries, which give the norm of the first entries
+# of s).
 
 def DirectSum(s, N, M, R=1):
     L = len(s)
@@ -60,7 +65,7 @@ def DirectSum(s, N, M, R=1):
                 for m in xrange((p - 1)//R + 1, min(M, (p + L - 1)//R + 1)):
                     # downshift modulate signal by frequency given by p
                     # then correlate with conjugate of transmitted signal
-                    xnp += s_conj[R*m - p]*np.exp(-2*np.pi*1j*n*(R*m - p)/N)*y[m]
+                    xnp += s_conj[R*m - p]*np.exp(-2*np.pi*1j*n*(R*m - p)/N)*y[m]/np.sqrt(N)
                 x[n, p] = xnp
 
         return x
@@ -81,6 +86,8 @@ def CodeFreqStrided(s, N, M, R=1):
     step = L // N + 1
     nfft = N*step
     
+    # need to include 1/sqrt(N) factor, and only easy place is in s
+    s = s/np.sqrt(N)
     s_conj = s.conj()
     
     # ypad is y upsampled by R, then padded with L-1 zeros at end:

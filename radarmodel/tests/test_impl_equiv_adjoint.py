@@ -38,7 +38,11 @@ def check_implementation(models, L, N, M, R, sdtype, ydtype):
         x0 = refmodel(y)
         for model in models[1:]:
             x1 = model(y)
-            np.testing.assert_array_almost_equal(x0, x1, err_msg=err_msg.format(model.func_name, refmodel.func_name))
+            try:
+                np.testing.assert_array_almost_equal_nulp(x0, x1, nulp=10000)
+            except AssertionError as e:
+                e.args += (err_msg.format(model.func_name, refmodel.func_name),)
+                raise
     
     call.description = 's={0}({1}), y={2}({3}), N={4}, R={5}'.format(np.dtype(sdtype).str,
                                                                      L,
@@ -58,6 +62,8 @@ def test_adjoint():
     sdtypes = (np.float32, np.complex128)
     ydtypes = (np.complex64, np.complex128)
     
+    np.random.seed(1)
+    
     for (L, N, M), R, (sdtype, ydtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, ydtypes)):
         callable_test = check_implementation(models, L, N, M, R, sdtype, ydtype)
         callable_test.description = 'test_adjoint: ' + callable_test.description
@@ -71,6 +77,8 @@ def test_adjoint_alt():
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
     ydtypes = (np.complex64, np.complex128)
+    
+    np.random.seed(2)
     
     for (L, N, M), R, (sdtype, ydtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, ydtypes)):
         callable_test = check_implementation(models, L, N, M, R, sdtype, ydtype)

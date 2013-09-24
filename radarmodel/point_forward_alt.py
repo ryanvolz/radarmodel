@@ -28,11 +28,11 @@ _THREADS = multiprocessing.cpu_count()
 __all__ = ['DirectSum', 'FreqCodeStrided', 'FreqCodeCython']
 
 # These Point forward models implement the equation:
-#     y[m] = \sum_{n,p} 1/N * e^{2*\pi*i*n*(R*m - p)/N} * s[R*m - p] * x[n, p]
-#          = \sum_{n,k} 1/N * e^{2*\pi*i*n*k/N} * s[k] * x[n, R*m - k]
+#     y[m] = \sum_{n,p} 1/sqrt(N) * e^{2*\pi*i*n*(R*m - p)/N} * s[R*m - p] * x[n, p]
+#          = \sum_{n,k} 1/sqrt(N) * e^{2*\pi*i*n*k/N} * s[k] * x[n, R*m - k]
 # for a given N, R, s[k], and variable x[n, p].
-# The 1/N term is included so that applying this model to the result of
-# the adjoint operation (without scaling) is well-scaled. In other words,
+# The 1/sqrt(N) term is included so that applying this model to the result of
+# the adjoint operation (with same scaling) is well-scaled. In other words,
 # the entries of A*Astar along the diagonal equal the norm of s (except
 # for the first len(s) entries, which give the norm of the first entries
 # of s).
@@ -50,7 +50,7 @@ def DirectSum(s, N, M, R=1):
             for k in xrange(max(0, R*m - R*M + 1), min(L, R*m + 1)):
                 s_k = s[k]
                 for n in xrange(N):
-                    ym += 1/N*np.exp(2*np.pi*1j*n*k/N)*s_k*x[n, R*m - k]
+                    ym += 1/np.sqrt(N)*np.exp(2*np.pi*1j*n*k/N)*s_k*x[n, R*m - k]
             y[m] = ym
 
         return y
@@ -71,8 +71,8 @@ def FreqCodeStrided(s, N, M, R=1):
     step = L // N + 1
     nfft = N*step
     
-    # IFFT below from FFTW does not include 1/N factor, so include it in s
-    s_over_N = s/N
+    # need to include 1/sqrt(N) factor, and only easy place is in s
+    s_over_sqrtN = s/np.sqrt(N)
     
     x_aligned = pyfftw.n_byte_align(np.zeros((R*M, nfft), xydtype), 16)
     
@@ -106,7 +106,7 @@ def FreqCodeStrided(s, N, M, R=1):
     def freqcode_strided(x):
         x_aligned[:, ::step] = x.T # upsample along FFT axis by step, results in wrapped FFT
         ifft.execute() # input is x_aligned, output is X
-        np.multiply(s_over_N, Xstrided, out=sX)
+        np.multiply(s_over_sqrtN, Xstrided, out=sX)
         y = sX.sum(axis=1)
         return y
     

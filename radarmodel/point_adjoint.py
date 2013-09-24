@@ -31,13 +31,18 @@ __all__ = ['DirectSum', 'DirectSumCython', 'DirectSumNumba',
            'FreqCodeSparse', 'CodeFreqStrided', 'CodeFreqCython']
 
 # These Point adjoint models implement the equation:
-#     x[n, p] = \sum_m e^{-2*\pi*i*n*m/N} * s*[R*m - p] * y[m]
+#     x[n, p] = \sum_m 1/sqrt(N) * e^{-2*\pi*i*n*m/N} * s*[R*m - p] * y[m]
 # for a given N, R, s*[k], and variable y[m].
 #
 # This amounts to sweeping demodulation of the received signal using the complex
 # conjugate of the transmitted waveform followed by calculation of the Fourier
 # spectrum for segments of the received signal.
 # The Fourier transform is taken with the signal delay intact.
+# The 1/sqrt(N) term is included so that applying the forward model (with same
+# scaling) to the result of this adjoint operation is well-scaled. In other 
+# words, the entries of A*Astar along the diagonal equal the norm of s (except
+# for the first len(s) entries, which give the norm of the first entries
+# of s).
 
 def DirectSum(s, N, M, R=1):
     L = len(s)
@@ -59,7 +64,7 @@ def DirectSum(s, N, M, R=1):
                 for m in xrange((p - 1)//R + 1, min(M, (p + L - 1)//R + 1)):
                     # downshift modulate signal by frequency given by p
                     # then correlate with conjugate of transmitted signal
-                    xnp += s_conj[R*m - p]*np.exp(-2*np.pi*1j*n*m/N)*y[m]
+                    xnp += s_conj[R*m - p]*np.exp(-2*np.pi*1j*n*m/N)*y[m]/np.sqrt(N)
                 x[n, p] = xnp
 
         return x
@@ -76,7 +81,7 @@ def DirectSumNumba(s, N, M, R=1):
     stype = numba.__getattribute__(str(s.dtype))
     xytype = numba.__getattribute__(str(xydtype))
     
-    dftmat = np.exp(-2*np.pi*1j*np.arange(M)*np.arange(N)[:, None]/N)
+    dftmat = np.exp(-2*np.pi*1j*np.arange(M)*np.arange(N)[:, None]/N)/np.sqrt(N)
     dftmat = dftmat.astype(xydtype) # use precision of output
     
     @jit(argtypes=[xytype[::1]],
@@ -110,7 +115,7 @@ def DirectSumCython(s, N, M, R=1):
     # ensure that s is C-contiguous as required by the Cython function
     s = np.asarray(s, order='C')
     
-    dftmat = np.exp(-2*np.pi*1j*np.arange(M)*np.arange(N)[:, None]/N)
+    dftmat = np.exp(-2*np.pi*1j*np.arange(M)*np.arange(N)[:, None]/N)/np.sqrt(N)
     dftmat = dftmat.astype(xydtype) # use precision of output
     
     return libpoint_adjoint.DirectSumCython(s, dftmat, R)
@@ -141,7 +146,7 @@ def FreqCodeSparse(s, N, M, R=1):
                                                (R*spad.itemsize, -spad.itemsize))
     smatconj = sparse.csr_matrix(smatconj)
     
-    dftmat = np.exp(-2*np.pi*1j*np.arange(N)[:, np.newaxis]*np.arange(M)/N)
+    dftmat = np.exp(-2*np.pi*1j*np.arange(N)[:, np.newaxis]*np.arange(M)/N)/np.sqrt(N)
     dftmat = dftmat.astype(xydtype) # use precision of output
     
     def freqcode_sparse(y):
@@ -162,6 +167,9 @@ def CodeFreqStrided(s, N, M, R=1):
     # then subsample to get our N points that we desire
     step = M // N + 1
     nfft = N*step
+    
+    # need to include 1/sqrt(N) factor, and only easy place is in s
+    s = s/np.sqrt(N)
     
     #         |<--(RM-1)-->| |<-----------L----------->| |<--(RM-L)-->|
     # spad = [0 0 0 .... 0 0 s[0] s[1] ... s[L-2] s[L-1] 0 0 .... 0 0 0]
