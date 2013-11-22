@@ -269,4 +269,4 @@ cdef class FFTW:
 
     cdef _update_arrays(self, np.ndarray new_input_array, np.ndarray new_output_array)
 
-    cpdef execute(self)
+    cpdef void execute(self)
