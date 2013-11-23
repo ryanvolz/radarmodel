@@ -25,6 +25,7 @@ import numpy as np
 
 try:
     from Cython.Compiler.Main import compile, CompilationResultSet
+    from Cython.Compiler.Options import parse_directive_list
 except ImportError:
     cython = False
 else:
@@ -73,14 +74,16 @@ if cython:
         description = "compile Cython code to C code"
         
         user_options = [('annotate', 'a', 'Produce a colorized HTML version of the source.'),
-                        ('timestamps', 't', 'Only compile newer source files')]
+                        ('directive=', 'X', 'Overrides a compiler directive.'),
+                        ('timestamps', 't', 'Only compile newer source files.')]
         
         def initialize_options(self):
             self.annotate = False
+            self.directive = ''
             self.timestamps = False
         
         def finalize_options(self):
-            pass
+            self.directive = parse_directive_list(self.directive)
         
         def run(self):
             results = CompilationResultSet()
@@ -90,7 +93,8 @@ if cython:
                               include_path=cython_ext.include_dirs,
                               verbose=True,
                               timestamps=self.timestamps,
-                              annotate=self.annotate)
+                              annotate=self.annotate,
+                              compiler_directives=self.directive)
                 if res:
                     results.update(res)
                     results.num_errors += res.num_errors
