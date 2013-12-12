@@ -22,13 +22,16 @@ import itertools
 from radarmodel import point_adjoint
 from radarmodel import point_adjoint_alt
 
-from util import get_random_uniform, get_random_oncircle
+from radarmodel.util import get_random_uniform, get_random_oncircle
 
-def check_implementation(models, L, N, M, R, sdtype, ydtype):
+def check_implementation(models, L, N, M, R, sdtype):
     s = get_random_oncircle((L,), sdtype)
-    y = get_random_uniform((M,), ydtype)
     
     models = [m(s, N, M, R) for m in models]
+    
+    inshape = models[0].inshape
+    indtype = models[0].indtype
+    y = get_random_uniform(inshape, indtype)
     
     err_msg = 'Result of model "{0}" (y) does not match model "{1}" (x)'
     
@@ -46,7 +49,7 @@ def check_implementation(models, L, N, M, R, sdtype, ydtype):
     
     call.description = 's={0}({1}), y={2}({3}), N={4}, R={5}'.format(np.dtype(sdtype).str,
                                                                      L,
-                                                                     np.dtype(ydtype).str,
+                                                                     np.dtype(indtype).str,
                                                                      M,
                                                                      N,
                                                                      R)
@@ -55,33 +58,31 @@ def check_implementation(models, L, N, M, R, sdtype, ydtype):
 
 def test_adjoint():
     models = [getattr(point_adjoint, modelname) for modelname in point_adjoint.__all__]
-    Ls = (13, 13, 13)
-    Ns = (13, 64, 8)
-    Ms = (37, 37, 37)
+    Ls = (13, 13, 13, 13)
+    Ns = (13, 64, 27, 8)
+    Ms = (37, 37, 10, 37)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
-    ydtypes = (np.complex64, np.complex128)
     
     np.random.seed(1)
     
-    for (L, N, M), R, (sdtype, ydtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, ydtypes)):
-        callable_test = check_implementation(models, L, N, M, R, sdtype, ydtype)
+    for (L, N, M), R, sdtype in itertools.product(zip(Ls, Ns, Ms), Rs, sdtypes):
+        callable_test = check_implementation(models, L, N, M, R, sdtype)
         callable_test.description = 'test_adjoint: ' + callable_test.description
         yield callable_test
 
 def test_adjoint_alt():
     models = [getattr(point_adjoint_alt, modelname) for modelname in point_adjoint_alt.__all__]
-    Ls = (13, 13, 13)
-    Ns = (13, 64, 8)
-    Ms = (37, 37, 37)
+    Ls = (13, 13, 13, 13)
+    Ns = (13, 64, 27, 8)
+    Ms = (37, 37, 10, 37)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
-    ydtypes = (np.complex64, np.complex128)
     
     np.random.seed(2)
     
-    for (L, N, M), R, (sdtype, ydtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, ydtypes)):
-        callable_test = check_implementation(models, L, N, M, R, sdtype, ydtype)
+    for (L, N, M), R, sdtype in itertools.product(zip(Ls, Ns, Ms), Rs, sdtypes):
+        callable_test = check_implementation(models, L, N, M, R, sdtype)
         callable_test.description = 'test_adjoint_alt: ' + callable_test.description
         yield callable_test
 

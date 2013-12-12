@@ -37,10 +37,11 @@ ctypedef fused xytype:
     cython.doublecomplex
 
 # These Point forward models implement the equation:
-#     y[m] = \sum_{n,p} 1/sqrt(N) * e^{2*\pi*i*n*m/N} * s[R*m - p] * x[n, p]
-# for a given N, R, s[k], and variable x[n, p].
-# The 1/N term is included so that applying this model to the result of
-# the adjoint operation (without scaling) is well-scaled. In other words,
+#     y[m] = \sum_{n,p} 1/sqrt(N) * e^{2*\pi*i*n*m/N} * s[R*m - p + L - 1] * x[n, p]
+# for a given N, R, s[k], and variable x[n, p]. The index n varies from 0 to N - 1, 
+# while p varies from 0 to R*M + L - R - 1.
+# The 1/sqrt(N) term is included so that applying this model to the result of
+# the adjoint operation (with same scaling) is well-scaled. In other words,
 # the entries of A*Astar along the diagonal equal the norm of s (except
 # for the first len(s) entries, which give the norm of the first entries
 # of s).
@@ -51,7 +52,8 @@ cdef direct_sum(stype[::1] s, xytype[:, ::1] idftmat, Py_ssize_t R, xytype[:, ::
     cdef Py_ssize_t L = s.shape[0]
     cdef Py_ssize_t M = idftmat.shape[0]
     cdef Py_ssize_t N = idftmat.shape[1]
-    cdef Py_ssize_t m, n, p, pstart, pstop
+    cdef Py_ssize_t P = x.shape[1]
+    cdef Py_ssize_t m, n, p
     cdef xytype ym
     cdef stype sk
 
@@ -67,10 +69,16 @@ cdef direct_sum(stype[::1] s, xytype[:, ::1] idftmat, Py_ssize_t R, xytype[:, ::
 
     for m in prange(M, nogil=True):
         ym = 0
-        pstart = max(0, R*m - L + 1)
-        pstop = min(R*M, R*m + 1)
-        for p in xrange(pstart, pstop):
-            sk = s[R*m - p]
+        # constraints on p from bounds of s:
+        # Rm - p + L - 1 >= 0:
+        #       p <= Rm + L - 1 < Rm + L
+        # Rm - p + L - 1 <= L - 1:
+        #       p >= Rm
+        # but constraints on p from bounds of x imply 0 <= p < P = R*M + L - R
+        # so pstart = max(0, R*m) = R*m
+        #    pstop = min(P, R*m + L) = min(R*M + L - R, R*m + L) = R*m + L
+        for p in xrange(R*m, R*m + L):
+            sk = s[R*m - p + L - 1]
             for n in xrange(N):
                 ym = ym + sk*idftmat[m, n]*x[n, p]
         y[m] = ym
@@ -97,6 +105,7 @@ cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] 
               pyfftw.FFTW ifft, Py_ssize_t M, Py_ssize_t R, xytype[:, ::1] x):
     cdef Py_ssize_t L = s_over_sqrtN.shape[0]
     cdef Py_ssize_t N = X.shape[0]
+    cdef Py_ssize_t P = X.shape[1]
     cdef Py_ssize_t m, p, pstart, pstop, m_mod_N
     cdef xytype ym
 
@@ -116,10 +125,16 @@ cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] 
     for m in prange(M, nogil=True):
         ym = 0
         m_mod_N = m % N
-        pstart = max(0, R*m - L + 1)
-        pstop = min(R*M, R*m + 1)
-        for p in xrange(pstart, pstop):
-            ym = ym + s_over_sqrtN[R*m - p]*X[m_mod_N, p] # no += because of prange
+        # constraints on p from bounds of s:
+        # Rm - p + L - 1 >= 0:
+        #       p <= Rm + L - 1 < Rm + L
+        # Rm - p + L - 1 <= L - 1:
+        #       p >= Rm
+        # but constraints on p from bounds of x imply 0 <= p < P = R*M + L - R
+        # so pstart = max(0, R*m) = R*m
+        #    pstop = min(P, R*m + L) = min(R*M + L - R, R*m + L) = R*m + L
+        for p in xrange(R*m, R*m + L):
+            ym = ym + s_over_sqrtN[R*m - p + L - 1]*X[m_mod_N, p] # no += because of prange
         y[m] = ym
 
     return y_ndarray

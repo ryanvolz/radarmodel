@@ -19,7 +19,6 @@ from __future__ import division
 import numpy as np
 import scipy.sparse as sparse
 import pyfftw
-import multiprocessing
 import timeit
 from collections import OrderedDict
 
@@ -27,12 +26,12 @@ from . import point_forward
 from . import point_adjoint
 from . import point_forward_alt
 from . import point_adjoint_alt
+from . import util
 
 __all__ = ['Adjoint', 'Adjoint_alt', 'Forward', 'Forward_alt', 
+           'fastest_adjoint', 'fastest_adjoint_alt', 'fastest_forward', 'fastest_forward_alt',
            'measure_adjoint', 'measure_adjoint_alt', 'measure_forward', 'measure_forward_alt',
            'time_models']
-
-_THREADS = multiprocessing.cpu_count()
 
 def time_models(mlist, x, number=100):
     times = []
@@ -42,135 +41,131 @@ def time_models(mlist, x, number=100):
     
     return times
 
-def measure_forward(s, N, M, R=1, 
-                    number=100, disp=True, meas_all=False):
-    mlist = [point_forward.CodeFreqSparse(s, N, M, R),
-             point_forward.FreqCodeCython(s, N, M, R)]
-    if meas_all:
-        mlist.extend([point_forward.FreqCodeStrided(s, N, M, R),
-                      point_forward.DirectSumCython(s, N, M, R)])
-    xshape = (N, R*M)
-    x = np.empty(xshape, np.result_type(s.dtype, np.complex64))
-    x.real = 2*np.random.rand(*xshape) - 1
-    x.imag = 2*np.random.rand(*xshape) - 1
-    times = time_models(mlist, x, number)
+def measure_factory(always, others):
+    def measure(s, N, M, R=1, number=100, disp=True, meas_all=False):
+        """Return (times, models), measured running times of model implementations.
+        
+    """
+        mlist = [mdl(s, N, M, R) for mdl in always]
+        if meas_all:
+            mlist.extend([mdl(s, N, M, R) for mdl in others])
+        
+        inshape = mlist[0].inshape
+        indtype = mlist[0].indtype
+        x = util.get_random_normal(inshape, indtype)
+        
+        times = time_models(mlist, x, number)
+        
+        # sort in order of times
+        tups = zip(times, mlist)
+        tups.sort()
+        
+        if disp:
+            for time, model in tups:
+                print(model.func_name + ': {0} s per call'.format(time/number))
+        
+        times, mlist = zip(*tups)
+        return times, mlist
     
-    # sort in order of times
-    tups = zip(times, mlist)
-    tups.sort()
+    measure.__doc__ += always[0].__doc__
+    measure.__doc__ += """
+    number: int
+        Number of times to run each model for averaging execution time.
     
-    if disp:
-        for time, model in tups:
-            print(model.func_name + ': {0} s per call'.format(time/number))
+    disp: bool
+        If True, prints time results in addition to returning them.
     
-    times, mlist = zip(*tups)
-    return times, mlist
+    meas_all: bool
+        If False, measure only the models expected to be fastest. 
+        If True, measure all models.
+    
+    """
+    
+    return measure
 
-def measure_forward_alt(s, N, M, R=1, 
-                        number=100, disp=True, meas_all=False):
-    mlist = [point_forward_alt.FreqCodeCython(s, N, M, R),
-             point_forward_alt.FreqCodeStrided(s, N, M, R)]
-    if meas_all:
-        mlist.extend([])
-    xshape = (N, R*M)
-    x = np.empty(xshape, np.result_type(s.dtype, np.complex64))
-    x.real = 2*np.random.rand(*xshape) - 1
-    x.imag = 2*np.random.rand(*xshape) - 1
-    times = time_models(mlist, x, number)
+def fastest_factory(always, others):
+    measurefun = measure_factory(always, others)
     
-    # sort in order of times
-    tups = zip(times, mlist)
-    tups.sort()
+    def fastest(s, N, M, R=1, number=100, meas_all=False):
+        """Return fastest model implementation for the given parameters.
+        
+    """
+        times, mlist = measurefun(s, N, M, R=R, number=number, 
+                                  disp=False, meas_all=meas_all)
+        return mlist[np.argmin(times)]
     
-    if disp:
-        for time, model in tups:
-            print(model.func_name + ': {0} s per call'.format(time/number))
+    fastest.__doc__ += always[0].__doc__
+    fastest.__doc__ += """
+    number: int
+        Number of times to run each model for averaging execution time.
     
-    times, mlist = zip(*tups)
-    return times, mlist
+    meas_all: bool
+        If False, measure only the models expected to be fastest. 
+        If True, measure all models.
+    
+    """
+    
+    return fastest
 
-def measure_adjoint(s, N, M, R=1, 
-                    number=100, disp=True, meas_all=False):
-    mlist = [point_adjoint.FreqCodeSparse(s, N, M, R),
-             point_adjoint.CodeFreqCython(s, N, M, R)]
-    if meas_all:
-        mlist.extend([point_adjoint.CodeFreqStrided(s, N, M, R),
-                      point_adjoint.DirectSumCython(s, N, M, R),
-                      point_adjoint.DirectSumNumba(s, N, M, R)])
-    y = np.empty(M, np.result_type(s.dtype, np.complex64))
-    y.real = 2*np.random.rand(M) - 1
-    y.imag = 2*np.random.rand(M) - 1
-    times = time_models(mlist, y, number)
-    
-    # sort in order of times
-    tups = zip(times, mlist)
-    tups.sort()
-    
-    if disp:
-        for time, model in tups:
-            print(model.func_name + ': {0} s per call'.format(time/number))
-    
-    times, mlist = zip(*tups)
-    return times, mlist
 
-def measure_adjoint_alt(s, N, M, R=1, 
-                        number=100, disp=True, meas_all=False):
-    mlist = [point_adjoint_alt.CodeFreqCython(s, N, M, R),
-             point_adjoint_alt.CodeFreqStrided(s, N, M, R)]
-    if meas_all:
-        mlist.extend([])
-    y = np.empty(M, np.result_type(s.dtype, np.complex64))
-    y.real = 2*np.random.rand(M) - 1
-    y.imag = 2*np.random.rand(M) - 1
-    times = time_models(mlist, y, number)
-    
-    # sort in order of times
-    tups = zip(times, mlist)
-    tups.sort()
-    
-    if disp:
-        for time, model in tups:
-            print(model.func_name + ': {0} s per call'.format(time/number))
-    
-    times, mlist = zip(*tups)
-    return times, mlist
+measure_forward = measure_factory(
+    [point_forward.FreqCodeCython,
+     point_forward.FreqCodeStrided],
+    [point_forward.CodeFreqSparse,
+     point_forward.DirectSumCython]
+    )
 
-def Forward(s, N, M, R=1, measure=True):
-    if measure is True:
-        times, mlist = measure_forward(s, N, M, R, 
-                                       number=10, disp=False, meas_all=False)
-        model = mlist[np.argmin(times)]
-    else:
-        model = point_forward.FreqCodeCython(s, N, M, R)
-    
-    return model
+fastest_forward = fastest_factory(
+    [point_forward.FreqCodeCython,
+     point_forward.FreqCodeStrided],
+    [point_forward.CodeFreqSparse,
+     point_forward.DirectSumCython]
+    )
 
-def Forward_alt(s, N, M, R=1, measure=True):
-    if measure is True:
-        times, mlist = measure_forward_alt(s, N, M, R, 
-                                           number=10, disp=False, meas_all=False)
-        model = mlist[np.argmin(times)]
-    else:
-        model = point_forward_alt.FreqCodeCython(s, N, M, R)
-    
-    return model
+Forward = point_forward.FreqCodeCython
 
-def Adjoint(s, N, M, R=1, measure=True):
-    if measure is True:
-        times, mlist = measure_adjoint(s, N, M, R,
-                                       number=10, disp=False, meas_all=False)
-        model = mlist[np.argmin(times)]
-    else:
-        model = point_adjoint.CodeFreqStrided(s, N, M, R)
-    
-    return model
+measure_forward_alt = measure_factory(
+    [point_forward_alt.FreqCodeCython,
+     point_forward_alt.FreqCodeStrided],
+    []
+    )
 
-def Adjoint_alt(s, N, M, R=1, measure=True):
-    if measure is True:
-        times, mlist = measure_adjoint_alt(s, N, M, R,
-                                           number=10, disp=False, meas_all=False)
-        model = mlist[np.argmin(times)]
-    else:
-        model = point_adjoint_alt.CodeFreqStrided(s, N, M, R)
-    
-    return model
+fastest_forward_alt = fastest_factory(
+    [point_forward_alt.FreqCodeCython,
+     point_forward_alt.FreqCodeStrided],
+    []
+    )
+
+Forward_alt = point_forward_alt.FreqCodeCython
+
+measure_adjoint = measure_factory(
+    [point_adjoint.CodeFreqCython,
+     point_adjoint.CodeFreqStrided],
+    [point_adjoint.DirectSumCython,
+     point_adjoint.DirectSumNumba,
+     point_adjoint.FreqCodeSparse]
+    )
+
+fastest_adjoint = fastest_factory(
+    [point_adjoint.CodeFreqCython,
+     point_adjoint.CodeFreqStrided],
+    [point_adjoint.DirectSumCython,
+     point_adjoint.DirectSumNumba,
+     point_adjoint.FreqCodeSparse]
+    )
+
+Adjoint = point_adjoint.CodeFreqStrided
+
+measure_adjoint_alt = measure_factory(
+    [point_adjoint_alt.CodeFreqCython,
+     point_adjoint_alt.CodeFreqStrided],
+    []
+    )
+
+fastest_adjoint_alt = fastest_factory(
+    [point_adjoint_alt.CodeFreqCython,
+     point_adjoint_alt.CodeFreqStrided],
+    []
+    )
+
+Adjoint_alt = point_adjoint_alt.CodeFreqStrided

@@ -20,9 +20,9 @@ import itertools
 
 from radarmodel import point_forward, point_adjoint, point_forward_alt, point_adjoint_alt
 
-from util import get_random_normal, get_random_oncircle
+from radarmodel.util import get_random_normal, get_random_oncircle
 
-def opnorm(A, Astar, inshape, indtype, reltol=1e-8, abstol=1e-6, maxits=100, printrate=None):
+def opnorm(A, Astar, reltol=1e-8, abstol=1e-6, maxits=100, printrate=None):
     """Estimate the l2-induced operator norm: sup_v ||A(v)||/||v|| for v != 0.
     
     Uses the power iteration method to estimate the operator norm of
@@ -32,6 +32,8 @@ def opnorm(A, Astar, inshape, indtype, reltol=1e-8, abstol=1e-6, maxits=100, pri
     
     Returns a tuple: (norm of A, norm of Astar, vector inducing maximum scaling).
     """
+    inshape = A.inshape
+    indtype = A.indtype
     v0 = get_random_normal(inshape, indtype)
     v = v0/np.linalg.norm(v0)
     norm_f0 = 1
@@ -58,12 +60,13 @@ def opnorm(A, Astar, inshape, indtype, reltol=1e-8, abstol=1e-6, maxits=100, pri
     
     return norm_f, norm_a, v
 
-def check_opnorm(formodel, adjmodel, L, N, M, R, sdtype, xdtype):
+def check_opnorm(formodel, adjmodel, L, N, M, R, sdtype):
     s = get_random_oncircle((L,), sdtype)
     s = s/np.linalg.norm(s)
     
     A = formodel(s, N, M, R)
     Astar = adjmodel(s, N, M, R)
+    indtype = A.indtype
     
     true_Anorm = 1
     true_Asnorm = 1
@@ -71,13 +74,16 @@ def check_opnorm(formodel, adjmodel, L, N, M, R, sdtype, xdtype):
     err_msg = 'Estimated {0} norm ({1}) does not match true {0} norm ({2})'
     
     def call():
-        Anorm, Asnorm, v = opnorm(A, Astar, (N, R*M), xdtype, reltol=1e-10, abstol=1e-8, maxits=100)
-        np.testing.assert_allclose(Anorm, true_Anorm, rtol=1e-4, atol=1e-2, err_msg=err_msg.format('forward', Anorm, true_Anorm))
-        np.testing.assert_allclose(Asnorm, true_Asnorm, rtol=1e-4, atol=1e-2, err_msg=err_msg.format('adjoint', Asnorm, true_Asnorm))
+        Anorm, Asnorm, v = opnorm(A, Astar, reltol=1e-10, abstol=1e-8, 
+                                  maxits=100)
+        np.testing.assert_allclose(Anorm, true_Anorm, rtol=1e-4, atol=1e-2, 
+                          err_msg=err_msg.format('forward', Anorm, true_Anorm))
+        np.testing.assert_allclose(Asnorm, true_Asnorm, rtol=1e-4, atol=1e-2, 
+                        err_msg=err_msg.format('adjoint', Asnorm, true_Asnorm))
     
     call.description = 's={0}({1}), x={2}({3}), N={4}, R={5}'.format(np.dtype(sdtype).str,
                                                                      L,
-                                                                     np.dtype(xdtype).str,
+                                                                     np.dtype(indtype).str,
                                                                      M,
                                                                      N,
                                                                      R)
@@ -88,16 +94,15 @@ def test_opnorm():
     Afun = point_forward.FreqCodeCython
     Astarfun = point_adjoint.CodeFreqCython
     Ls = (13, 13, 13)
-    Ns = (13, 64, 8)
-    Ms = (37, 37, 37)
+    Ns = (13, 64, 27)
+    Ms = (37, 37, 10)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
-    xdtypes = (np.complex64, np.complex128)
     
     np.random.seed(1)
     
-    for (L, N, M), R, (sdtype, xdtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, xdtypes)):
-        callable_test = check_opnorm(Afun, Astarfun, L, N, M, R, sdtype, xdtype)
+    for (L, N, M), R, sdtype in itertools.product(zip(Ls, Ns, Ms), Rs, sdtypes):
+        callable_test = check_opnorm(Afun, Astarfun, L, N, M, R, sdtype)
         callable_test.description = 'test_opnorm: ' + callable_test.description
         yield callable_test
 
@@ -105,16 +110,16 @@ def test_opnorm_alt():
     Afun = point_forward_alt.FreqCodeCython
     Astarfun = point_adjoint_alt.CodeFreqCython
     Ls = (13, 13, 13)
-    Ns = (13, 64, 8)
-    Ms = (37, 37, 37)
+    Ns = (13, 64, 27)
+    Ms = (37, 37, 10)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
     xdtypes = (np.complex64, np.complex128)
     
     np.random.seed(2)
     
-    for (L, N, M), R, (sdtype, xdtype) in itertools.product(zip(Ls, Ns, Ms), Rs, zip(sdtypes, xdtypes)):
-        callable_test = check_opnorm(Afun, Astarfun, L, N, M, R, sdtype, xdtype)
+    for (L, N, M), R, sdtype in itertools.product(zip(Ls, Ns, Ms), Rs, sdtypes):
+        callable_test = check_opnorm(Afun, Astarfun, L, N, M, R, sdtype)
         callable_test.description = 'test_opnorm_alt: ' + callable_test.description
         yield callable_test
 

@@ -38,10 +38,14 @@ ctypedef fused xytype:
     cython.doublecomplex
 
 # These Point forward models implement the equation:
-#     y[m] = \sum_{n,p} 1/sqrt(N) * e^{2*\pi*i*n*(R*m - p)/N} * s[R*m - p] * x[n, p]
-# for a given N, R, s[k], and variable x[n, p].
-# The 1/N term is included so that applying this model to the result of
-# the adjoint operation (without scaling) is well-scaled. In other words,
+#     y[m] = \sum_{n,p} ( 1/sqrt(N) * e^{2*\pi*i*n*(R*m - p + L - 1)/N} 
+#                        * s[R*m - p + L - 1] * x[n, p] )
+#          = \sum_{n,l} ( 1/sqrt(N) * e^{2*\pi*i*n*l/N} 
+#                        * s[l] * x[n, R*m - l + L - 1] )
+# for a given N, R, s[k], and variable x[n, p]. The index n varies from 0 to
+# N - 1, while p varies from 0 to R*M + L - R - 1.
+# The 1/sqrt(N) term is included so that applying this model to the result of
+# the adjoint operation (with same scaling) is well-scaled. In other words,
 # the entries of A*Astar along the diagonal equal the norm of s (except
 # for the first len(s) entries, which give the norm of the first entries
 # of s).
@@ -53,7 +57,7 @@ cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] 
               pyfftw.FFTW ifft, Py_ssize_t M, Py_ssize_t R, xytype[:, ::1] x):
     cdef Py_ssize_t L = s_over_sqrtN.shape[0]
     cdef Py_ssize_t N = X.shape[0]
-    cdef Py_ssize_t m, l, lstart, lstop
+    cdef Py_ssize_t m, l
     cdef xytype ym
 
     cdef np.ndarray y_ndarray
@@ -71,10 +75,16 @@ cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] 
     # (s_over_sqrtN*Xstrided).sum(axis=1) :
     for m in prange(M, nogil=True):
         ym = 0
-        lstart = max(0, R*m - R*M + 1)
-        lstop = min(L, R*m + 1)
-        for l in xrange(lstart, lstop):
-            ym = ym + s_over_sqrtN[l]*X[l % N, R*m - l] # no += because of prange
+        # constraints on l from bounds of x:
+        # Rm - l + L - 1 >= 0:
+        #       l <= Rm + L - 1 < Rm + L
+        # Rm - l + L - 1 <= RM + L - R - 1:
+        #       l >= Rm - RM +  R
+        # but constraints on l from bounds of s imply 0 <= l < L
+        # so lstart = 0
+        #    lstop = L
+        for l in xrange(L):
+            ym = ym + s_over_sqrtN[l]*X[l % N, R*m - l + L - 1] # no += because of prange
         y[m] = ym
 
     return y_ndarray
