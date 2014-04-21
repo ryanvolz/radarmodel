@@ -8,56 +8,80 @@
 #-----------------------------------------------------------------------------
 
 import os
-import sys
 import copy
 from distutils.core import setup, Extension, Command
+from distutils.util import get_platform
 import numpy as np
 
 try:
-    from Cython.Compiler.Main import compile, CompilationResultSet
+    from Cython.Build import cythonize
     from Cython.Compiler.Options import parse_directive_list
 except ImportError:
-    cython = False
+    HAS_CYTHON = False
 else:
-    cython = True
+    HAS_CYTHON = True
 
+def no_cythonize(extensions, **_ignore):
+    dupextensions = copy.deepcopy(extensions)
+    for extension in dupextensions:
+        sources = []
+        for sfile in extension.sources:
+            path, ext = os.path.splitext(sfile)
+            if ext in ('.pyx', '.py'):
+                if extension.language == 'c++':
+                    ext = '.cpp'
+                else:
+                    ext = '.c'
+                sfile = path + ext
+            sources.append(sfile)
+        extension.sources[:] = sources
+    return dupextensions
+
+# regular extension modules
 ext_modules = []
 
-cython_modules = [Extension('radarmodel.libpoint_forward',
-                            sources=['radarmodel/libpoint_forward.c'],
-                            include_dirs=[np.get_include(), 'radarmodel/include'],
-                            extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
-                            extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
-                  Extension('radarmodel.libpoint_adjoint',
-                            sources=['radarmodel/libpoint_adjoint.c'],
-                            include_dirs=[np.get_include(), 'radarmodel/include'],
-                            extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
-                            extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
-                  Extension('radarmodel.libpoint_forward_alt',
-                            sources=['radarmodel/libpoint_forward_alt.c'],
-                            include_dirs=[np.get_include(), 'radarmodel/include'],
-                            extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
-                            extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
-                  Extension('radarmodel.libpoint_adjoint_alt',
-                            sources=['radarmodel/libpoint_adjoint_alt.c'],
-                            include_dirs=[np.get_include(), 'radarmodel/include'],
-                            extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
-                            extra_link_args=['-O3', '-ffast-math', '-fopenmp'])]
-# add C-files from cython modules to extension modules
-ext_modules.extend(cython_modules)
-
-cython_extensions = []
-for c_mod in cython_modules:
-    cython_ext = copy.copy(c_mod)
-    cython_ext.sources = [root + '.pyx' for root, ext 
-                          in map(os.path.splitext, c_mod.sources) 
-                          if ext.lower() == '.c']
+# cython extension modules
+def get_pyfftw_includes():
+    import pyfftw
     
-    cython_extensions.append(cython_ext)
+    dirs = []
+    pyfftw_include_dir = os.path.abspath(os.path.join(os.path.dirname(pyfftw.__file__),
+                                                      os.pardir, # equivalent to '..'
+                                                      'include'))
+    dirs.append(pyfftw_include_dir)
+    if get_platform() in ('win32', 'win-amd64'):
+        dirs.append(os.path.join(pyfftw_include_dir, 'win'))
+    
+    return dirs
 
+cython_include_path = [] # include for cimport, different from compile include
+ext_cython = [Extension('radarmodel.libpoint_forward',
+                        sources=['radarmodel/libpoint_forward.pyx'],
+                        include_dirs=[np.get_include()] + get_pyfftw_includes(),
+                        extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                        extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
+              Extension('radarmodel.libpoint_adjoint',
+                        sources=['radarmodel/libpoint_adjoint.pyx'],
+                        include_dirs=[np.get_include()] + get_pyfftw_includes(),
+                        extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                        extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
+              Extension('radarmodel.libpoint_forward_alt',
+                        sources=['radarmodel/libpoint_forward_alt.pyx'],
+                        include_dirs=[np.get_include()] + get_pyfftw_includes(),
+                        extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                        extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
+              Extension('radarmodel.libpoint_adjoint_alt',
+                        sources=['radarmodel/libpoint_adjoint_alt.pyx'],
+                        include_dirs=[np.get_include()] + get_pyfftw_includes(),
+                        extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
+                        extra_link_args=['-O3', '-ffast-math', '-fopenmp'])]
+# add C-files from cython modules to extension modules
+ext_modules.extend(no_cythonize(ext_cython))
+
+# custom setup.py commands
 cmdclass = dict()
 
-if cython:
+if HAS_CYTHON:
     class CythonCommand(Command):
         """Distutils command to cythonize source files."""
         
@@ -76,21 +100,11 @@ if cython:
             self.directive = parse_directive_list(self.directive)
         
         def run(self):
-            results = CompilationResultSet()
-            
-            for cython_ext in cython_extensions:                
-                res = compile(cython_ext.sources,
-                              include_path=cython_ext.include_dirs,
-                              verbose=True,
-                              timestamps=self.timestamps,
-                              annotate=self.annotate,
-                              compiler_directives=self.directive)
-                if res:
-                    results.update(res)
-                    results.num_errors += res.num_errors
-            
-            if results.num_errors > 0:
-                sys.stderr.write('Cython compilation failed!')
+            cythonize(ext_cython,
+                      include_path=cython_include_path,
+                      force=(not self.timestamps),
+                      annotate=self.annotate,
+                      compiler_directives=self.directive)
 
     cmdclass['cython'] = CythonCommand
 
@@ -98,19 +112,18 @@ setup(name='radarmodel',
       version='0.1-dev',
       maintainer='Ryan Volz',
       maintainer_email='ryan.volz@gmail.com',
-      url='http://sess.stanford.edu',
+      url='http://github.com/ryanvolz/radarmodel',
       description='Radar Modeling',
       long_description='',
       classifiers=['Development Status :: 3 - Alpha',
                    'Environment :: Console',
                    'Intended Audience :: Science/Research',
-                   'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+                   'License :: OSI Approved :: BSD License',
                    'Operating System :: OS Independent',
                    'Programming Language :: Cython',
                    'Programming Language :: Python',
                    'Programming Language :: Python :: 2',
                    'Topic :: Scientific/Engineering'],
       packages=['radarmodel'],
-      package_data={'radarmodel': ['include/*']},
       cmdclass=cmdclass,
       ext_modules=ext_modules)

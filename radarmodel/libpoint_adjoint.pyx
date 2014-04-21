@@ -15,7 +15,7 @@ from cython.parallel import prange
 from cython cimport view
 import numpy as np
 cimport numpy as np
-cimport pyfftw
+cimport pyfftw.pyfftw as pyfftw
 
 np.import_array() # or else we get segfaults when calling numpy C-api
 
