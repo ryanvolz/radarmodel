@@ -14,7 +14,6 @@ cimport cython
 from cython.parallel import prange
 import numpy as np
 cimport numpy as np
-cimport pyfftw.pyfftw as pyfftw
 
 np.import_array() # or else we get segfaults when calling numpy C-api
 
@@ -94,7 +93,7 @@ def DirectSumCython(stype[::1] s, xytype[:, ::1] idftmat, Py_ssize_t R=1):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] X, 
-              pyfftw.FFTW ifft, Py_ssize_t M, Py_ssize_t R, xytype[:, ::1] x):
+              object ifft, Py_ssize_t M, Py_ssize_t R, xytype[:, ::1] x):
     cdef Py_ssize_t L = s_over_sqrtN.shape[0]
     cdef Py_ssize_t N = X.shape[0]
     cdef Py_ssize_t P = X.shape[1]
@@ -132,7 +131,7 @@ cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] 
     return y_ndarray
 
 def FreqCodeCython(stype[::1] s, xytype[:, ::1] x_aligned, xytype[:, ::1] X, 
-                   pyfftw.FFTW ifft, Py_ssize_t M, Py_ssize_t R=1):
+                   object ifft, Py_ssize_t M, Py_ssize_t R=1):
     cdef xytype[:, ::1] x_aligned2 = x_aligned # work around closure scope bug which doesn't include fused arguments
     cdef xytype[:, ::1] X2 = X # work around closure scope bug which doesn't include fused arguments
 

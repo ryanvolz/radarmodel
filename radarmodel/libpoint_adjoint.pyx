@@ -15,7 +15,6 @@ from cython.parallel import prange
 from cython cimport view
 import numpy as np
 cimport numpy as np
-cimport pyfftw.pyfftw as pyfftw
 
 np.import_array() # or else we get segfaults when calling numpy C-api
 
@@ -102,7 +101,7 @@ def DirectSumCython(stype[::1] s, xytype[:, ::1] dftmat, Py_ssize_t R=1):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef codefreq(stype[::1] s_conj_over_sqrtN, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned, 
-              pyfftw.FFTW fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R,
+              object fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R,
               xytype[::1] y):
     cdef Py_ssize_t L = s_conj_over_sqrtN.shape[0]
     cdef Py_ssize_t P = R*M + L - R
@@ -140,7 +139,7 @@ cdef codefreq(stype[::1] s_conj_over_sqrtN, xytype[:, ::1] demodpad, xytype[:, :
     return x_ndarray
 
 def CodeFreqCython(stype[::1] s, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned, 
-                   pyfftw.FFTW fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R):
+                   object fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R):
     cdef xytype[:, ::1] demodpad2 = demodpad # work around closure scope bug which doesn't include fused arguments
     cdef xytype[:, ::1] x_aligned2 = x_aligned # work around closure scope bug which doesn't include fused arguments
 

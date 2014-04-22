@@ -41,38 +41,25 @@ def no_cythonize(extensions, **_ignore):
 ext_modules = []
 
 # cython extension modules
-def get_pyfftw_includes():
-    import pyfftw
-    
-    dirs = []
-    pyfftw_include_dir = os.path.abspath(os.path.join(os.path.dirname(pyfftw.__file__),
-                                                      os.pardir, # equivalent to '..'
-                                                      'include'))
-    dirs.append(pyfftw_include_dir)
-    if get_platform() in ('win32', 'win-amd64'):
-        dirs.append(os.path.join(pyfftw_include_dir, 'win'))
-    
-    return dirs
-
 cython_include_path = [] # include for cimport, different from compile include
 ext_cython = [Extension('radarmodel.libpoint_forward',
                         sources=['radarmodel/libpoint_forward.pyx'],
-                        include_dirs=[np.get_include()] + get_pyfftw_includes(),
+                        include_dirs=[np.get_include()],
                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
                         extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
               Extension('radarmodel.libpoint_adjoint',
                         sources=['radarmodel/libpoint_adjoint.pyx'],
-                        include_dirs=[np.get_include()] + get_pyfftw_includes(),
+                        include_dirs=[np.get_include()],
                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
                         extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
               Extension('radarmodel.libpoint_forward_alt',
                         sources=['radarmodel/libpoint_forward_alt.pyx'],
-                        include_dirs=[np.get_include()] + get_pyfftw_includes(),
+                        include_dirs=[np.get_include()],
                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
                         extra_link_args=['-O3', '-ffast-math', '-fopenmp']),
               Extension('radarmodel.libpoint_adjoint_alt',
                         sources=['radarmodel/libpoint_adjoint_alt.pyx'],
-                        include_dirs=[np.get_include()] + get_pyfftw_includes(),
+                        include_dirs=[np.get_include()],
                         extra_compile_args=['-O3', '-ffast-math', '-fopenmp'],
                         extra_link_args=['-O3', '-ffast-math', '-fopenmp'])]
 # add C-files from cython modules to extension modules
