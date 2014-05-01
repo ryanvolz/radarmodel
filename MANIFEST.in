@@ -6,3 +6,4 @@ include radarmodel/tests/test*.py
 include LICENSE
 include optional_requirements.txt
 include requirements.txt
+include version.py

@@ -13,6 +13,22 @@ from distutils.core import setup, Extension, Command
 from distutils.util import get_platform
 import numpy as np
 
+import version
+
+here = os.path.abspath(os.path.dirname(__file__))
+
+def get_version(*file_paths):
+    try:
+        # read version from git tags
+        ver = version.read_version_git()
+    except:
+        # read version from file
+        ver = version.read_version_file(here, *file_paths)
+    else:
+        # write version to file if we got it successfully from git
+        version.write_version_file(ver, here, *file_paths)
+    return ver
+
 try:
     from Cython.Build import cythonize
     from Cython.Compiler.Options import parse_directive_list
@@ -96,7 +112,7 @@ if HAS_CYTHON:
     cmdclass['cython'] = CythonCommand
 
 setup(name='radarmodel',
-      version='0.1-dev',
+      version=get_version('radarmodel', '_version.py'),
       maintainer='Ryan Volz',
       maintainer_email='ryan.volz@gmail.com',
       url='http://github.com/ryanvolz/radarmodel',
