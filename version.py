@@ -1,3 +1,5 @@
+# This file is placed into the public domain.
+
 """Calculate the current package version number based on git tags.
 
 This module provides `read_version_git` to read the output of "git describe"
