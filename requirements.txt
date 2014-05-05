@@ -1,4 +1,0 @@
-numba
-numpy
-pyFFTW==0.8.2
-scipy

@@ -4,6 +4,4 @@ include radarmodel/libpoint_forward.pyx
 include radarmodel/libpoint_forward_alt.pyx
 include radarmodel/tests/test*.py
 include LICENSE
-include optional_requirements.txt
-include requirements.txt
 include version.py
