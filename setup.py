@@ -13,21 +13,13 @@ import copy
 from setuptools import setup, Extension, Command
 import numpy as np
 
-import version
+import versioneer
 
-here = os.path.abspath(os.path.dirname(__file__))
-
-def get_version(*file_paths):
-    try:
-        # read version from git tags
-        ver = version.read_version_git()
-    except:
-        # read version from file
-        ver = version.read_version_file(here, *file_paths)
-    else:
-        # write version to file if we got it successfully from git
-        version.write_version_file(ver, here, *file_paths)
-    return ver
+versioneer.VCS = 'git'
+versioneer.versionfile_source = 'radarmodel/_version.py'
+versioneer.versionfile_build = 'radarmodel/_version.py'
+versioneer.tag_prefix = 'v' # tags are like v1.2.0
+versioneer.parentdir_prefix = 'radarmodel-' # dirname like 'radarmodel-1.2.0'
 
 try:
     from Cython.Build import cythonize
@@ -82,7 +74,7 @@ ext_cython = [Extension('radarmodel.libpoint_forward',
 ext_modules.extend(no_cythonize(ext_cython))
 
 # custom setup.py commands
-cmdclass = dict()
+cmdclass = versioneer.get_cmdclass()
 
 if HAS_CYTHON:
     class CythonCommand(Command):
@@ -118,7 +110,7 @@ with codecs.open('README.rst', encoding='utf-8') as f:
 
 setup(
     name='radarmodel',
-    version=get_version('radarmodel', '_version.py'),
+    version=versioneer.get_version(),
     description='Radar Modeling',
     long_description=long_description,
 
