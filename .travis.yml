@@ -20,10 +20,9 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda create -n test-environment python=$TRAVIS_PYTHON_VERSION nose numba=0.11.1 numpy scipy
+  # install from conda defaults, then from public binstar if not available
+  - conda create -n test-environment --channel defaults --channel conda.binstar.org/public python=$TRAVIS_PYTHON_VERSION nose numba=0.11.1 numpy pyfftw scipy setuptools
   - source activate test-environment
-  # install packages from binstar that are not available from continuum analytics
-  - conda install -c https://conda.binstar.org/richli pyfftw
   - python setup.py install
 
 script: make test
