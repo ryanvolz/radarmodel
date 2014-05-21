@@ -21,7 +21,7 @@ install:
   - conda info -a
 
   # install from conda defaults, then from public binstar if not available
-  - conda create -n test-environment --channel defaults --channel conda.binstar.org/public python=$TRAVIS_PYTHON_VERSION nose numba=0.11.1 numpy pyfftw scipy setuptools
+  - conda create -n test-environment --channel defaults --channel https://conda.binstar.org/public python=$TRAVIS_PYTHON_VERSION nose numba=0.11.1 numpy pyfftw scipy setuptools
   - source activate test-environment
   - python setup.py install
 
