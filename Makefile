@@ -10,6 +10,12 @@ all: clean inplace test
 clean:
 	-$(PYTHON) setup.py clean
 
+clean_build:
+	-$(PYTHON) setup.py clean --all
+
+clean_coverage:
+	-rm -rf coverage .coverage
+
 clean_pyc:
 	-find . -name '*.py[co]' -exec rm {} \;
 
@@ -29,17 +35,21 @@ cython_annotate:
 cython_force:
 	$(PYTHON) setup.py cython
 
+distclean: clean_build clean_pyc
+
 in: inplace # just a shortcut
 inplace:
 	$(PYTHON) setup.py build_ext --inplace
 
+inplace_force:
+	$(PYTHON) setup.py build_ext --inplace --force
+
 test: test_code
 
-test_code: in
+test_code: cython inplace
 	$(NOSETESTS) -s -v
 
-test_coverage:
-	-rm -rf coverage .coverage
+test_coverage: cython inplace clean_coverage
 	$(NOSETESTS) -s -v --with-coverage
 
 # doc: inplace

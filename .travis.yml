@@ -23,7 +23,7 @@ install:
   # install from conda defaults, then from public binstar if not available
   - conda create -n test-environment --channel defaults --channel https://conda.binstar.org/public python=$TRAVIS_PYTHON_VERSION cython nose numba=0.11.1 numpy pyfftw scipy setuptools
   - source activate test-environment
-  - python setup.py cython
-  - python setup.py install
+  - make cython_force
+  - make inplace_force
 
 script: make test
