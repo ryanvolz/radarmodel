@@ -1,4 +1,14 @@
-"""
+"""Radar modeling.
+
+.. currentmodule:: radarmodel
+
+Models
+------
+
+.. autosummary::
+    :toctree:
+
+    point
 
 """
 from . import point

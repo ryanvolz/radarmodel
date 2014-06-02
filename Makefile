@@ -3,12 +3,12 @@
 # allow specifying python version on command line to ease testing with
 # different versions, e.g. $ PYTHON=/usr/bin/python3 make test
 PYTHON ?= python
-NOSETESTS ?= nosetests
 
 all: clean inplace test
 
 clean:
 	-$(PYTHON) setup.py clean
+	make -C doc clean
 
 clean_build:
 	-$(PYTHON) setup.py clean --all
@@ -36,6 +36,10 @@ cython_force:
 	$(PYTHON) setup.py cython
 
 distclean: clean_build clean_pyc
+	make -C doc distclean
+
+doc: inplace
+	make -C doc html
 
 in: inplace # just a shortcut
 inplace:
@@ -47,10 +51,7 @@ inplace_force:
 test: test_code
 
 test_code: cython inplace
-	$(NOSETESTS) -s -v
+	$(PYTHON) setup.py nosetests --nocapture --verbose
 
 test_coverage: cython inplace clean_coverage
-	$(NOSETESTS) -s -v --with-coverage
-
-# doc: inplace
-# 	$(MAKE) -C doc html
+	$(PYTHON) setup.py nosetests --nocapture --verbose --with-coverage

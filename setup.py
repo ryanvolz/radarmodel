@@ -140,6 +140,7 @@ setup(
     install_requires=['numba<=0.11.1', 'numpy', 'pyFFTW', 'scipy'],
     extras_require={
         'develop': ['Cython>=0.17', 'flake8', 'nose', 'pylint'],
+        'doc': ['numpydoc', 'sphinx'],
     },
     cmdclass=cmdclass,
     ext_modules=ext_modules,

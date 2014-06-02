@@ -7,6 +7,46 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
+"""Point target models.
+
+.. currentmodule:: radarmodel.point
+
+Standard Model
+--------------
+
+.. autosummary::
+    :toctree:
+
+    Forward
+    Adjoint
+    fastest_forward
+    fastest_adjoint
+    measure_forward
+    measure_adjoint
+
+Alternative Model
+-----------------
+
+.. autosummary::
+    :toctree:
+
+    Forward_alt
+    Adjoint_alt
+    fastest_forward_alt
+    fastest_adjoint_alt
+    measure_forward_alt
+    measure_adjoint_alt
+
+Utilities
+---------
+
+.. autosummary::
+    :toctree:
+
+    time_models
+
+"""
+
 from __future__ import division
 import numpy as np
 import scipy.sparse as sparse
@@ -20,7 +60,7 @@ from . import point_forward_alt
 from . import point_adjoint_alt
 from . import util
 
-__all__ = ['Adjoint', 'Adjoint_alt', 'Forward', 'Forward_alt', 
+__all__ = ['Adjoint', 'Adjoint_alt', 'Forward', 'Forward_alt',
            'fastest_adjoint', 'fastest_adjoint_alt', 'fastest_forward', 'fastest_forward_alt',
            'measure_adjoint', 'measure_adjoint_alt', 'measure_forward', 'measure_forward_alt',
            'time_models']
@@ -30,73 +70,79 @@ def time_models(mlist, x, number=100):
     for model in mlist:
         timer = timeit.Timer(lambda: model(x))
         times.append(min(timer.repeat(repeat=3, number=number)))
-    
+
     return times
 
 def measure_factory(always, others):
     def measure(s, N, M, R=1, number=100, disp=True, meas_all=False):
         """Return (times, models), measured running times of model implementations.
-        
-    """
+
+    """  # need short indent so adding docstrings works correctly
         mlist = [mdl(s, N, M, R) for mdl in always]
         if meas_all:
             mlist.extend([mdl(s, N, M, R) for mdl in others])
-        
+
         inshape = mlist[0].inshape
         indtype = mlist[0].indtype
         x = util.get_random_normal(inshape, indtype)
-        
+
         times = time_models(mlist, x, number)
-        
+
         # sort in order of times
         tups = zip(times, mlist)
         tups.sort()
-        
+
         if disp:
             for time, model in tups:
                 print(model.func_name + ': {0} s per call'.format(time/number))
-        
+
         times, mlist = zip(*tups)
         return times, mlist
-    
+
     measure.__doc__ += always[0].__doc__
     measure.__doc__ += """
-    number: int
+    Other Parameters
+    ----------------
+
+    number : int
         Number of times to run each model for averaging execution time.
-    
-    disp: bool
+
+    disp : bool
         If True, prints time results in addition to returning them.
-    
-    meas_all: bool
-        If False, measure only the models expected to be fastest. 
+
+    meas_all : bool
+        If False, measure only the models expected to be fastest.
         If True, measure all models.
-    
+
     """
-    
+
     return measure
 
 def fastest_factory(always, others):
     measurefun = measure_factory(always, others)
-    
+
     def fastest(s, N, M, R=1, number=100, meas_all=False):
         """Return fastest model implementation for the given parameters.
-        
-    """
-        times, mlist = measurefun(s, N, M, R=R, number=number, 
+
+    """ # need short indent so adding docstrings works correctly
+        times, mlist = measurefun(s, N, M, R=R, number=number,
                                   disp=False, meas_all=meas_all)
         return mlist[np.argmin(times)]
-    
+
     fastest.__doc__ += always[0].__doc__
     fastest.__doc__ += """
-    number: int
+    Other Parameters
+    ----------------
+
+    number : int
         Number of times to run each model for averaging execution time.
-    
-    meas_all: bool
-        If False, measure only the models expected to be fastest. 
+
+    meas_all : bool
+        If False, measure only the models expected to be fastest.
         If True, measure all models.
-    
+
     """
-    
+
     return fastest
 
 
