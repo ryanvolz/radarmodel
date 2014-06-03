@@ -4,6 +4,8 @@
 # different versions, e.g. $ PYTHON=/usr/bin/python3 make test
 PYTHON ?= python
 
+.PHONY: all clean clean_build clean_coverage clean_inplace clean_sphinxbuild code_analysis code_check cython cython_annotate cython_force dist distclean doc doc_force in inplace inplace_force pdf test test_code test_coverage
+
 all: clean inplace test
 
 clean:
@@ -16,8 +18,13 @@ clean_build:
 clean_coverage:
 	-rm -rf coverage .coverage
 
-clean_pyc:
-	-find . -name '*.py[co]' -exec rm {} \;
+clean_inplace:
+	-find . -name '*.py[cdo]' -exec rm {} \;
+	-find radarmodel \( -name '*.dll' -o -name '*.so' \) -exec rm {} \;
+	-find radarmodel -name '*.html' -exec rm {} \;
+
+clean_sphinxbuild:
+	-rm -rf build/sphinx
 
 code_analysis:
 	-pylint -i y -f colorized radarmodel
@@ -35,18 +42,28 @@ cython_annotate:
 cython_force:
 	$(PYTHON) setup.py cython
 
-distclean: clean_build clean_pyc
+dist: cython
+	$(PYTHON) setup.py sdist
+
+distclean: clean_build clean_inplace clean_sphinxbuild
 	make -C doc distclean
 
 doc: inplace
-	make -C doc html
+	$(PYTHON) setup.py build_sphinx
+
+doc_force: inplace
+	$(PYTHON) setup.py build_sphinx --fresh-env
 
 in: inplace # just a shortcut
-inplace:
+inplace: cython
 	$(PYTHON) setup.py build_ext --inplace
 
-inplace_force:
+inplace_force: cython
 	$(PYTHON) setup.py build_ext --inplace --force
+
+pdf:
+	$(PYTHON) setup.py build_sphinx --fresh-env --builder latex
+	make -C build/sphinx/latex all-pdf
 
 test: test_code
 

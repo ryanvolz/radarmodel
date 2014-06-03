@@ -1,8 +1,7 @@
-include radarmodel/libpoint_adjoint.pyx
-include radarmodel/libpoint_adjoint_alt.pyx
-include radarmodel/libpoint_forward.pyx
-include radarmodel/libpoint_forward_alt.pyx
-include radarmodel/tests/test*.py
+recursive-include radarmodel *.pyx
 include LICENSE
 include README.rst
 include versioneer.py
+graft doc
+prune doc/build
+prune doc/source/generated

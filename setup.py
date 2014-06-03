@@ -10,7 +10,7 @@
 import os
 import codecs
 import copy
-from setuptools import setup, Extension, Command
+from setuptools import setup, Extension, Command, find_packages
 import numpy as np
 
 import versioneer
@@ -135,7 +135,7 @@ setup(
 
     keywords='radar model',
 
-    packages=['radarmodel'],
+    packages=find_packages(),
     setup_requires=['numpy'],
     install_requires=['numba<=0.11.1', 'numpy', 'pyFFTW', 'scipy'],
     extras_require={
