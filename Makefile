@@ -4,6 +4,8 @@
 # different versions, e.g. $ PYTHON=/usr/bin/python3 make test
 PYTHON ?= python
 
+PACKAGE = radarmodel
+
 .PHONY: all clean clean_build clean_coverage clean_inplace clean_sphinxbuild code_analysis code_check cython cython_annotate cython_force dist distclean doc doc_force in inplace inplace_force pdf test test_code test_coverage
 
 all: clean inplace test
@@ -20,18 +22,18 @@ clean_coverage:
 
 clean_inplace:
 	-find . -name '*.py[cdo]' -exec rm {} \;
-	-find radarmodel \( -name '*.dll' -o -name '*.so' \) -exec rm {} \;
-	-find radarmodel -name '*.html' -exec rm {} \;
+	-find $(PACKAGE) \( -name '*.dll' -o -name '*.so' \) -exec rm {} \;
+	-find $(PACKAGE) -name '*.html' -exec rm {} \;
 
 clean_sphinxbuild:
 	-rm -rf build/sphinx
 
 code_analysis:
-	-pylint -i y -f colorized radarmodel
+	-pylint -i y -f colorized $(PACKAGE)
 
 code_check:
-	flake8 radarmodel | grep -v __init__ | grep -v _version
-	pylint -E -i y -f colorized radarmodel
+	flake8 $(PACKAGE) | grep -v __init__ | grep -v _version
+	pylint -E -i y -f colorized $(PACKAGE)
 
 cython:
 	$(PYTHON) setup.py cython --timestamps
@@ -68,7 +70,7 @@ pdf:
 test: test_code
 
 test_code: cython inplace
-	$(PYTHON) setup.py nosetests --nocapture --verbose
+	$(PYTHON) setup.py nosetests --nocapture --verbosity=2
 
 test_coverage: cython inplace clean_coverage
-	$(PYTHON) setup.py nosetests --nocapture --verbose --with-coverage
+	$(PYTHON) setup.py nosetests --nocapture --verbosity=2 --with-coverage

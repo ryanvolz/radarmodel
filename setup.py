@@ -103,6 +103,21 @@ if HAS_CYTHON:
 
     cmdclass['cython'] = CythonCommand
 
+# add nose and sphinx commands since we depend on them but they are not always
+# automatically available (e.g. when using conda versions of these packages)
+try:
+    from nose.commands import nosetests
+except ImportError:
+    pass
+else:
+    cmdclass['nosetests'] = nosetests
+try:
+    from sphinx.setup_command import BuildDoc
+except ImportError:
+    pass
+else:
+    cmdclass['build_sphinx'] = BuildDoc
+
 # Get the long description from the relevant file
 # Use codecs.open for Python 2 compatibility
 with codecs.open('README.rst', encoding='utf-8') as f:
