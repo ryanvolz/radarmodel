@@ -29,7 +29,7 @@ install:
   - conda install conda-build jinja2 setuptools
   - export CONDA_PY="${TRAVIS_PYTHON_VERSION//./}"
   - export CONDA_NPY=17
-  - conda build --post conda.recipe/
+  - conda build --no-test --no-binstar-upload conda.recipe/
 
   # change to conda build's source directory (so we can re-use built extensions for inplace)
   - cd "$HOME/miniconda/conda-bld/work"
