@@ -26,7 +26,7 @@ install:
   - conda info -a
 
   # build package from conda recipe
-  - conda install conda-build
+  - conda install conda-build jinja2
   - export CONDA_PY="${TRAVIS_PYTHON_VERSION//./}"
   - export CONDA_NPY=17
   - conda build --no-test conda.recipe/
