@@ -16,14 +16,23 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
+
+  # install from conda defaults, then from public binstar if not available
+  - conda config --add channels 'defaults'
+  - conda config --add channels 'https://conda.binstar.org/public'
+
   - conda update conda
   # Useful for debugging any issues with conda
   - conda info -a
 
-  # install from conda defaults, then from public binstar if not available
-  - conda create -n test-environment --channel defaults --channel https://conda.binstar.org/public python=$TRAVIS_PYTHON_VERSION cython nose numba=0.11.1 numpy pyfftw scipy setuptools
+  # build package from conda recipe
+  - conda install conda-build
+  - export CONDA_PY="${TRAVIS_PYTHON_VERSION//./}"
+  - export CONDA_NPY=17
+  - conda build --no-test conda.recipe/
+
+  # install into test environment
+  - conda create -n test-environment --uselocal radarmodel python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
-  - make cython_force
-  - make inplace_force
 
 script: make test
