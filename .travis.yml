@@ -32,7 +32,7 @@ install:
   - conda build --no-test conda.recipe/
 
   # install into test environment
-  - conda create -n test-environment --uselocal radarmodel python=$TRAVIS_PYTHON_VERSION
+  - conda create -n test-environment --use-local radarmodel python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
 
 script: make test
