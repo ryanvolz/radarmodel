@@ -29,10 +29,13 @@ install:
   - conda install conda-build jinja2 setuptools
   - export CONDA_PY="${TRAVIS_PYTHON_VERSION//./}"
   - export CONDA_NPY=17
-  - conda build --no-test conda.recipe/
+  - conda build --post conda.recipe/
 
-  # install into test environment
-  - conda create -n test-environment --use-local radarmodel python=$TRAVIS_PYTHON_VERSION
+  # change to conda build's source directory (so we can re-use built extensions for inplace)
+  - cd "$HOME/miniconda/conda-bld/work"
+
+  # install into test environment with additional test dependencies
+  - conda create -n test-environment --use-local radarmodel cython nose python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
 
 script: make test
