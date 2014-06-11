@@ -1,0 +1,39 @@
+package:
+  name: radarmodel
+  #version: "0.1"
+
+source:
+  git_url: https://github.com/ryanvolz/radarmodel.git
+  #git_tag: v0.1
+
+build:
+  number: {{environ.get('BINSTAR_BUILD', 1)}}
+  script:
+    - $PYTHON setup.py cython
+    - $PYTHON setup.py build
+    - $PYTHON setup.py install --single-version-externally-managed --record=record.txt
+    - cd $PKG_NAME
+    - $PYTHON -c "from _version import get_versions; print(get_versions()['version'].replace('-', '.'))" > "$SRC_DIR/__conda_version__.txt"
+
+requirements:
+  build:
+    - cython
+    - numpy
+    - python
+    - setuptools
+  run:
+    - numba <=0.11.1
+    - numpy
+    - pyfftw
+    - python
+    - setuptools
+    - scipy
+
+test:
+  imports:
+    - radarmodel
+
+about:
+  home: http://github.com/ryanvolz/radarmodel
+  license: BSD 3-Clause ("BSD New")
+  summary: Radar Modeling
