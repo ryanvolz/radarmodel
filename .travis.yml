@@ -17,9 +17,11 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
 
-  # install from conda defaults, then from public binstar if not available
+  # install from conda defaults and select repositories for non-anaconda packages
   - conda config --add channels 'defaults'
-  - conda config --add channels 'https://conda.binstar.org/public'
+  - conda config --add channels 'richli' # pyfftw and fftw
+  - conda config --add channels 'renemilk' # glumpy
+  - conda config --add channels 'pandas' # bottleneck
 
   - conda update conda
   # Useful for debugging any issues with conda
