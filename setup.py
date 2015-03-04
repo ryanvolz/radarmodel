@@ -152,7 +152,7 @@ setup(
 
     packages=find_packages(),
     setup_requires=['numpy'],
-    install_requires=['numba<=0.11.1', 'numpy', 'pyFFTW', 'scipy'],
+    install_requires=['numba', 'numpy', 'pyFFTW', 'scipy'],
     extras_require={
         'develop': ['Cython>=0.17', 'flake8', 'nose', 'pylint'],
         'doc': ['numpydoc', 'sphinx'],

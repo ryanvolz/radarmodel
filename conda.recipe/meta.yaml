@@ -22,7 +22,7 @@ requirements:
     - python
     - setuptools
   run:
-    - numba <=0.11.1
+    - numba
     - numpy
     - pyfftw
     - python
