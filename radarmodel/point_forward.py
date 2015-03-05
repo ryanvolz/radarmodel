@@ -14,13 +14,14 @@ import pyfftw
 import multiprocessing
 
 from radarmodel import libpoint_forward
+from time_varying_conv import tvconv_output_kernel
 
 from .common import model_dec
 
 _THREADS = multiprocessing.cpu_count()
 
-__all__ = ['DirectSum', 'DirectSumCython',
-           'CodeFreqSparse', 'FreqCodeStrided', 'FreqCodeCython']
+__all__ = ['DirectSum', 'DirectSumCython', 'CodeFreqSparse',
+           'FreqCodeStrided', 'FreqCodeCython', 'FreqCodeNumba']
 
 def forward_factory_dec(fun):
     doc = r"""Construct a point model function.
@@ -327,12 +328,12 @@ def FreqCodeStrided(s, N, M, R=1):
     xydtype = np.result_type(s.dtype, np.complex64)
 
     # need to include 1/sqrt(N) factor, and only easy place is in s
-    s = s/np.sqrt(N)
+    s_over_sqrtN = s/np.sqrt(N)
 
     #         |<------------------P----------------->|
     #         |<--(RM-R)-->| |<-----------L--------->|   |<--(RM-R)-->|
     # spad = [0 0 0 .... 0 0 s[0] s[1] ... s[L-2] s[L-1] 0 0 .... 0 0 0]
-    spad = np.hstack((np.zeros(R*M - R, s.dtype), s, np.zeros(R*M - R, s.dtype)))
+    spad = np.hstack((np.zeros(R*M - R, s.dtype), s_over_sqrtN, np.zeros(R*M - R, s.dtype)))
 
     # R == 1, smat =
     # [s[L-1] s[L-2] ... s[0]  0   ...   0    ...  0    0
@@ -395,6 +396,31 @@ def FreqCodeStrided(s, N, M, R=1):
             return y
 
     return forward_op_dec(s, N, M, R)(freqcode_strided)
+
+@forward_factory_dec
+def FreqCodeNumba(s, N, M, R=1):
+    L = len(s)
+    P = R*M + L - R
+    # use precision (single or double) of s
+    # input and output are always complex
+    xydtype = np.result_type(s.dtype, np.complex64)
+
+    # need to include 1/sqrt(N) factor, and only easy place is in s
+    s_over_sqrtN = s/np.sqrt(N)
+
+    x_aligned = pyfftw.n_byte_align(np.zeros((N, P), xydtype), 16)
+    X = pyfftw.n_byte_align(np.zeros((N, P), xydtype), 16)
+    ifft = pyfftw.FFTW(x_aligned, X, direction='FFTW_BACKWARD',
+                       axes=(0,), threads=_THREADS)
+
+    @forward_op_dec(s, N, M, R)
+    def freqcode_numba(x):
+        x_aligned[:, :] = x
+        ifft.execute() # input is x_aligned, output is X
+        y = tvconv_output_kernel(s_over_sqrtN, X, R)
+        return y
+
+    return freqcode_numba
 
 @forward_factory_dec
 def FreqCodeCython(s, N, M, R=1):

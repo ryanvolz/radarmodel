@@ -148,6 +148,7 @@ def fastest_factory(always, others):
 
 measure_forward = measure_factory(
     [point_forward.FreqCodeCython,
+     point_forward.FreqCodeNumba,
      point_forward.FreqCodeStrided],
     [point_forward.CodeFreqSparse,
      point_forward.DirectSumCython]
@@ -155,6 +156,7 @@ measure_forward = measure_factory(
 
 fastest_forward = fastest_factory(
     [point_forward.FreqCodeCython,
+     point_forward.FreqCodeNumba,
      point_forward.FreqCodeStrided],
     [point_forward.CodeFreqSparse,
      point_forward.DirectSumCython]
@@ -164,12 +166,14 @@ Forward = point_forward.FreqCodeCython
 
 measure_forward_alt = measure_factory(
     [point_forward_alt.FreqCodeCython,
+     point_forward_alt.FreqCodeNumba,
      point_forward_alt.FreqCodeStrided],
     []
     )
 
 fastest_forward_alt = fastest_factory(
     [point_forward_alt.FreqCodeCython,
+     point_forward_alt.FreqCodeNumba,
      point_forward_alt.FreqCodeStrided],
     []
     )
