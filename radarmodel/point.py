@@ -182,6 +182,7 @@ Forward_alt = point_forward_alt.FreqCodeCython
 
 measure_adjoint = measure_factory(
     [point_adjoint.CodeFreqCython,
+     point_adjoint.CodeFreqNumba,
      point_adjoint.CodeFreqStrided],
     [point_adjoint.DirectSumCython,
      point_adjoint.DirectSumNumba,
@@ -190,6 +191,7 @@ measure_adjoint = measure_factory(
 
 fastest_adjoint = fastest_factory(
     [point_adjoint.CodeFreqCython,
+     point_adjoint.CodeFreqNumba,
      point_adjoint.CodeFreqStrided],
     [point_adjoint.DirectSumCython,
      point_adjoint.DirectSumNumba,
@@ -200,12 +202,14 @@ Adjoint = point_adjoint.CodeFreqStrided
 
 measure_adjoint_alt = measure_factory(
     [point_adjoint_alt.CodeFreqCython,
+     point_adjoint_alt.CodeFreqNumba,
      point_adjoint_alt.CodeFreqStrided],
     []
     )
 
 fastest_adjoint_alt = fastest_factory(
     [point_adjoint_alt.CodeFreqCython,
+     point_adjoint_alt.CodeFreqNumba,
      point_adjoint_alt.CodeFreqStrided],
     []
     )

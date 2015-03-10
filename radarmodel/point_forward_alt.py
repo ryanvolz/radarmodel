@@ -14,7 +14,7 @@ import pyfftw
 import multiprocessing
 
 from radarmodel import libpoint_forward_alt
-from time_varying_conv import tvconv_input_kernel
+from time_varying_conv import tvconv_by_input
 
 from .common import model_dec
 
@@ -310,18 +310,17 @@ def FreqCodeNumba(s, N, M, R=1):
     xydtype = np.result_type(s.dtype, np.complex64)
 
     # need to include 1/sqrt(N) factor, and only easy place is in s
-    s = s/np.sqrt(N)
+    s_over_sqrtN = s/np.sqrt(N)
 
-    x_aligned = pyfftw.n_byte_align(np.zeros((N, P), xydtype), 16)
-    X = pyfftw.n_byte_align(np.zeros((N, P), xydtype), 16)
-    ifft = pyfftw.FFTW(x_aligned, X, direction='FFTW_BACKWARD',
-                       axes=(0,), threads=_THREADS)
+    x_aligned = pyfftw.n_byte_align(np.zeros((P, N), xydtype), 16)
+    X = pyfftw.n_byte_align(np.zeros_like(x_aligned), 16)
+    ifft = pyfftw.FFTW(x_aligned, X, direction='FFTW_BACKWARD', threads=_THREADS)
 
     @forward_op_dec(s, N, M, R)
     def freqcode_numba(x):
-        x_aligned[:, :] = x
+        x_aligned[:, :] = x.T
         ifft.execute() # input is x_aligned, output is X
-        y = tvconv_input_kernel(s, X, R)
+        y = tvconv_by_input(s_over_sqrtN, X, R)
         return y
 
     return freqcode_numba

@@ -16,12 +16,13 @@ import pyfftw
 import multiprocessing
 
 from radarmodel import libpoint_adjoint_alt
+from delay_multiply import delaymult_like_arg2_prealloc
 
 from .common import model_dec
 
 _THREADS = multiprocessing.cpu_count()
 
-__all__ = ['DirectSum', 'CodeFreqStrided', 'CodeFreqCython']
+__all__ = ['DirectSum', 'CodeFreqStrided', 'CodeFreqCython', 'CodeFreqNumba']
 
 def adjoint_factory_dec(fun):
     doc = r"""Construct an adjoint point model function.
@@ -322,6 +323,35 @@ def CodeFreqStrided(s, N, M, R=1):
         return x
 
     return codefreq_strided
+
+@adjoint_factory_dec
+def CodeFreqNumba(s, N, M, R=1):
+    L = len(s)
+    P = R*M + L - R
+    # use precision (single or double) of s
+    # input and output are always complex
+    xydtype = np.result_type(s.dtype, np.complex64)
+
+    # when N < L, still need to take FFT with nfft >= L so we don't lose data
+    # then subsample to get our N points that we desire
+    step = L // N + 1
+    nfft = N*step
+
+    # need to include 1/sqrt(N) factor, and only easy place is in s
+    s_over_sqrtN = s/np.sqrt(N)
+
+    demodpad = pyfftw.n_byte_align(np.zeros((P, nfft), xydtype), 16)
+    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
+    fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
+
+    @adjoint_op_dec(s, N, M, R)
+    def codefreq_numba(y):
+        delaymult_like_arg2_prealloc(y, s_over_sqrtN, R, demodpad[:, :L])
+        fft.execute() # input is demodpad, output is x_aligned
+        x = np.array(x_aligned[:, ::step].T) # we need a copy, which np.array provides
+        return x
+
+    return codefreq_numba
 
 @adjoint_factory_dec
 def CodeFreqCython(s, N, M, R=1):
