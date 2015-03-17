@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2014, Ryan Volz
+# Copyright (c) 2014, 'radarmodel' developers (see AUTHORS file)
 # All rights reserved.
 #
 # Distributed under the terms of the BSD 3-Clause ("BSD New") license.
@@ -29,7 +29,7 @@ ctypedef fused xytype:
 
 # These Point forward models implement the equation:
 #     y[m] = \sum_{n,p} 1/sqrt(N) * e^{2*\pi*i*n*m/N} * s[R*m - p + L - 1] * x[n, p]
-# for a given N, R, s[k], and variable x[n, p]. The index n varies from 0 to N - 1, 
+# for a given N, R, s[k], and variable x[n, p]. The index n varies from 0 to N - 1,
 # while p varies from 0 to R*M + L - R - 1.
 # The 1/sqrt(N) term is included so that applying this model to the result of
 # the adjoint operation (with same scaling) is well-scaled. In other words,
@@ -92,7 +92,7 @@ def DirectSumCython(stype[::1] s, xytype[:, ::1] idftmat, Py_ssize_t R=1):
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] X, 
+cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] X,
               object ifft, Py_ssize_t M, Py_ssize_t R, xytype[:, ::1] x):
     cdef Py_ssize_t L = s_over_sqrtN.shape[0]
     cdef Py_ssize_t N = X.shape[0]
@@ -130,7 +130,7 @@ cdef freqcode(stype[::1] s_over_sqrtN, xytype[:, ::1] x_aligned, xytype[:, ::1] 
 
     return y_ndarray
 
-def FreqCodeCython(stype[::1] s, xytype[:, ::1] x_aligned, xytype[:, ::1] X, 
+def FreqCodeCython(stype[::1] s, xytype[:, ::1] x_aligned, xytype[:, ::1] X,
                    object ifft, Py_ssize_t M, Py_ssize_t R=1):
     cdef xytype[:, ::1] x_aligned2 = x_aligned # work around closure scope bug which doesn't include fused arguments
     cdef xytype[:, ::1] X2 = X # work around closure scope bug which doesn't include fused arguments

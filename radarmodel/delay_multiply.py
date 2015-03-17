@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2015, Ryan Volz
+# Copyright (c) 2015, 'radarmodel' developers (see AUTHORS file)
 # All rights reserved.
 #
 # Distributed under the terms of the BSD 3-Clause ("BSD New") license.

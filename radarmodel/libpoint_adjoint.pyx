@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2014, Ryan Volz
+# Copyright (c) 2014, 'radarmodel' developers (see AUTHORS file)
 # All rights reserved.
 #
 # Distributed under the terms of the BSD 3-Clause ("BSD New") license.
@@ -30,7 +30,7 @@ ctypedef fused xytype:
 
 # These Point adjoint models implement the equation:
 #     x[n, p] = \sum_m 1/sqrt(N) * e^{-2*\pi*i*n*m/N} * s*[R*m - p] * y[m]
-# for a given N, R, s*[k], and variable y[m]. The index n varies from 0 to N-1, 
+# for a given N, R, s*[k], and variable y[m]. The index n varies from 0 to N-1,
 # while p varies from 0 to R*M + L - R - 1 to facilitate all pairings of s* and y.
 #
 # This amounts to sweeping demodulation of the received signal using the complex
@@ -38,7 +38,7 @@ ctypedef fused xytype:
 # spectrum for segments of the received signal.
 # The Fourier transform is taken with the signal delay intact.
 # The 1/sqrt(N) term is included so that applying the forward model (with same
-# scaling) to the result of this adjoint operation is well-scaled. In other 
+# scaling) to the result of this adjoint operation is well-scaled. In other
 # words, the entries of A*Astar along the diagonal equal the norm of s (except
 # for the first len(s) entries, which give the norm of the first entries
 # of s).
@@ -64,14 +64,14 @@ cdef direct_sum(stype[::1] s_conj, xytype[:, ::1] dftmat, Py_ssize_t R, xytype[:
         # we set every entry, so empty is ok
         x_ndarray = np.PyArray_EMPTY(2, xshape, np.NPY_COMPLEX128, 0)
     x = x_ndarray
-    
+
     for p in prange(P, nogil=True):
         # constraints on m from bounds of s:
         # Rm - p + L - 1 >= 0:
         #       m >= ceil((p - L + 1)/R) --> m >= floor((p - L)/R) + 1
         # Rm - p + L - 1 <= L - 1:
         #       m <= floor(p/R)
-        # add R before division so calculation of (p - L)//R + 1 <= 0 
+        # add R before division so calculation of (p - L)//R + 1 <= 0
         # when it should be with cdivision semantics (floor toward 0)
         mstart = max(0, (p - L + R)//R)
         mstop = min(M, p//R + 1)
@@ -100,7 +100,7 @@ def DirectSumCython(stype[::1] s, xytype[:, ::1] dftmat, Py_ssize_t R=1):
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef codefreq(stype[::1] s_conj_over_sqrtN, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned, 
+cdef codefreq(stype[::1] s_conj_over_sqrtN, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned,
               object fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R,
               xytype[::1] y):
     cdef Py_ssize_t L = s_conj_over_sqrtN.shape[0]
@@ -126,7 +126,7 @@ cdef codefreq(stype[::1] s_conj_over_sqrtN, xytype[:, ::1] demodpad, xytype[:, :
         #       m >= ceil((p - L + 1)/R) --> m >= floor((p - L)/R) + 1
         # Rm - p + L - 1 <= L - 1:
         #       m <= floor(p/R)
-        # add R before division so calculation of (p - L)//R + 1 <= 0 
+        # add R before division so calculation of (p - L)//R + 1 <= 0
         # when it should be with cdivision semantics (floor toward 0)
         mstart = max(0, (p - L + R)//R)
         mstop = min(M, p//R + 1)
@@ -138,7 +138,7 @@ cdef codefreq(stype[::1] s_conj_over_sqrtN, xytype[:, ::1] demodpad, xytype[:, :
 
     return x_ndarray
 
-def CodeFreqCython(stype[::1] s, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned, 
+def CodeFreqCython(stype[::1] s, xytype[:, ::1] demodpad, xytype[:, ::1] x_aligned,
                    object fft, Py_ssize_t step, Py_ssize_t N, Py_ssize_t M, Py_ssize_t R):
     cdef xytype[:, ::1] demodpad2 = demodpad # work around closure scope bug which doesn't include fused arguments
     cdef xytype[:, ::1] x_aligned2 = x_aligned # work around closure scope bug which doesn't include fused arguments

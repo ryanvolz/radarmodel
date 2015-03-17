@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-# Copyright (c) 2014, Ryan Volz
+# Copyright (c) 2014, 'radarmodel' developers (see AUTHORS file)
 # All rights reserved.
 #
 # Distributed under the terms of the BSD 3-Clause ("BSD New") license.
@@ -13,6 +13,6 @@ def model_dec(inshape, indtype, outshape, outdtype):
         fun.indtype = indtype
         fun.outshape = outshape
         fun.outdtype = outdtype
-        
+
         return fun
     return decor
