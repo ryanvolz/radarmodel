@@ -13,9 +13,8 @@ import scipy.sparse as sparse
 import pyfftw
 import multiprocessing
 
-from radarmodel import libpoint_forward
-from time_varying_conv import tvconv_by_output
-
+from . import libpoint_forward
+from .time_varying_conv import tvconv_by_output
 from .common import model_dec
 
 _THREADS = multiprocessing.cpu_count()
