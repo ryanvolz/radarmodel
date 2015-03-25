@@ -2,6 +2,7 @@ recursive-include radarmodel *.pyx
 include LICENSE
 include README.rst
 include versioneer.py
+include radarmodel/_version.py
 graft doc
 prune doc/build
 prune doc/source/generated
