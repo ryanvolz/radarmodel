@@ -36,7 +36,7 @@ def check_implementation(models, L, N, M, R, sdtype):
             try:
                 np.testing.assert_array_almost_equal_nulp(y0, y1, nulp=10000)
             except AssertionError as e:
-                e.args += (err_msg.format(model.func_name, refmodel.func_name),)
+                e.args += (err_msg.format(model.__name__, refmodel.__name__),)
                 raise
 
     call.description = 's={0}({1}), x={2}({3}, {4}), R={5}'.format(np.dtype(sdtype).str,

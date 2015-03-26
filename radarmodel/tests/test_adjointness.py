@@ -58,7 +58,7 @@ def check_adjointness(formodel, adjmodel, L, N, M, R, sdtype):
     def call():
         errs = adjointness_error(A, Astar, its=100)
         np.testing.assert_array_almost_equal(errs, 0,
-            err_msg=err_msg.format(formodel.func_name, adjmodel.func_name, np.max(np.abs(errs))))
+            err_msg=err_msg.format(formodel.__name__, adjmodel.__name__, np.max(np.abs(errs))))
 
     call.description = 's={0}({1}), x={2}({3}), N={4}, R={5}'.format(np.dtype(sdtype).str,
                                                                      L,

@@ -94,7 +94,7 @@ def measure_factory(always, others):
 
         if disp:
             for time, model in tups:
-                print(model.func_name + ': {0} s per call'.format(time/number))
+                print(model.__name__ + ': {0} s per call'.format(time/number))
 
         times, mlist = zip(*tups)
         return times, mlist
