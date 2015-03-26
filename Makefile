@@ -29,11 +29,11 @@ clean_sphinxbuild:
 	-rm -rf build/sphinx
 
 code_analysis:
-	-pylint -i y -f colorized $(PACKAGE)
+	-pylint --output-format colorized --extension-pkg-whitelist=numpy $(PACKAGE)
 
 code_check:
 	flake8 $(PACKAGE) | grep -v __init__ | grep -v _version
-	pylint -E -i y -f colorized $(PACKAGE)
+	pylint --errors-only --output-format colorized --extension-pkg-whitelist=numpy $(PACKAGE)
 
 cython:
 	$(PYTHON) setup.py cython --timestamps
