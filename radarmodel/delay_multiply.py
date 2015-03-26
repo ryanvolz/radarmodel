@@ -102,7 +102,8 @@ def delaymult_like_arg1(a, v, R=1):
     M = len(a)
     L = len(v)
     P = R*M + L - R
-    out = np.zeros((P, M), dtype=a.dtype)
+    outdtype = np.result_type(a.dtype, v.dtype)
+    out = np.zeros((P, M), dtype=outdtype)
     return delaymult_like_arg1_prealloc(a, v, R, out)
 
 @jit(nopython=True, nogil=True)
@@ -197,5 +198,6 @@ def delaymult_like_arg2(a, v, R=1):
     M = len(a)
     L = len(v)
     P = R*M + L - R
-    out = np.zeros((P, L), dtype=y.dtype)
+    outdtype = np.result_type(a.dtype, v.dtype)
+    out = np.zeros((P, L), dtype=outdtype)
     return delaymult_like_arg2_prealloc(a, v, R, out)

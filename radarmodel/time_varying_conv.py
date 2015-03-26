@@ -104,7 +104,8 @@ def tvconv_by_input(s, x, R=1):
     L = len(s)
     P = x.shape[0]
     M = (P - L) // R + 1
-    y = np.zeros(M, dtype=x.dtype)
+    outdtype = np.result_type(s.dtype, x.dtype)
+    y = np.zeros(M, dtype=outdtype)
     return tvconv_by_input_prealloc(s, x, R, y)
 
 @jit(nopython=True, nogil=True)
@@ -200,5 +201,6 @@ def tvconv_by_output(s, x, R=1):
     L = len(s)
     P = x.shape[0]
     M = (P - L) // R + 1
-    y = np.zeros(M, dtype=x.dtype)
+    outdtype = np.result_type(s.dtype, x.dtype)
+    y = np.zeros(M, dtype=outdtype)
     return tvconv_by_output_prealloc(s, x, R, y)
