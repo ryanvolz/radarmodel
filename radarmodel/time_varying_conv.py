@@ -14,7 +14,7 @@ __all__ = ['tvconv_by_input', 'tvconv_by_output']
 
 @jit(nopython=True, nogil=True)
 def tvconv_by_input_prealloc(s, x, y):
-    """tvconv_by_input for pre-allocated output. `y` must be zeroed.
+    """tvconv_by_input for pre-allocated output `y`.
 
     See :func:`tvconv_by_input` for more information.
 
@@ -24,6 +24,9 @@ def tvconv_by_input_prealloc(s, x, y):
     P = x.shape[0]
     N = x.shape[1]
     R = (P - L)//(M - 1)
+
+    y[:] = 0
+
     # s obviously can be iterated over [0, L-1]
     # for x, we require that its first dimension is of length P, where
     # P = R*M + L - R. Then this operation is entirely within bounds.
@@ -107,12 +110,12 @@ def tvconv_by_input(s, x, R=1):
     P = x.shape[0]
     M = (P - L) // R + 1
     outdtype = np.result_type(s.dtype, x.dtype)
-    y = np.zeros(M, dtype=outdtype)
+    y = np.empty(M, dtype=outdtype)
     return tvconv_by_input_prealloc(s, x, y)
 
 @jit(nopython=True, nogil=True)
 def tvconv_by_output_prealloc(s, x, y):
-    """tvconv_by_output for pre-allocated output. `y` must be zeroed.
+    """tvconv_by_output for pre-allocated output `y`.
 
     See :func:`tvconv_by_output` for more information.
 
@@ -122,6 +125,9 @@ def tvconv_by_output_prealloc(s, x, y):
     P = x.shape[0]
     N = x.shape[1]
     R = (P - L)//(M - 1)
+
+    y[:] = 0
+
     for m in range(M):
         m_mod_N = m % N # modulus calculation is slow, keep it in outer loop
         # s obviously can be iterated over [0, L-1]
@@ -206,5 +212,5 @@ def tvconv_by_output(s, x, R=1):
     P = x.shape[0]
     M = (P - L) // R + 1
     outdtype = np.result_type(s.dtype, x.dtype)
-    y = np.zeros(M, dtype=outdtype)
+    y = np.empty(M, dtype=outdtype)
     return tvconv_by_output_prealloc(s, x, y)
