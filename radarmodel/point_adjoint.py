@@ -465,9 +465,9 @@ def CodeFreqNumba(s, N, M, R=1):
 
     @adjoint_op_dec(s, N, M, R)
     def codefreq_numba(y):
-        delaymult_like_arg1_prealloc(y, s_over_sqrtN, R, demodpad[:, :M])
+        delaymult_like_arg1_prealloc(y, s_over_sqrtN, demodpad[:, :M])
         fft.execute() # input is demodpad, output is x_aligned
-        x = np.array(x_aligned[:, ::step].T) # we need a copy, which np.array provides
+        x = np.array(x_aligned[:, ::step].T)
         return x
 
     return codefreq_numba

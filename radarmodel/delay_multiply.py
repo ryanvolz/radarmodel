@@ -13,7 +13,7 @@ from numba import jit
 __all__ = ['delaymult_like_arg1', 'delaymult_like_arg2']
 
 @jit(nopython=True, nogil=True)
-def delaymult_like_arg1_prealloc(a, v, R, out):
+def delaymult_like_arg1_prealloc(a, v, out):
     """delaymult_like_arg1 for pre-allocated output `out`.
 
     See :func:`delaymult_like_arg1` for more information.
@@ -21,6 +21,8 @@ def delaymult_like_arg1_prealloc(a, v, R, out):
     """
     M = len(a)
     L = len(v)
+    P = out.shape[0]
+    R = (P - L)//(M - 1)
     for l in range(L):
         for m in range(M):
             out[R*m - l + L - 1, m] = a[m]*np.conj(v[l])
@@ -104,10 +106,10 @@ def delaymult_like_arg1(a, v, R=1):
     P = R*M + L - R
     outdtype = np.result_type(a.dtype, v.dtype)
     out = np.zeros((P, M), dtype=outdtype)
-    return delaymult_like_arg1_prealloc(a, v, R, out)
+    return delaymult_like_arg1_prealloc(a, v, out)
 
 @jit(nopython=True, nogil=True)
-def delaymult_like_arg2_prealloc(a, v, R, out):
+def delaymult_like_arg2_prealloc(a, v, out):
     """delaymult_like_arg2 for pre-allocated output `out`.
 
     See :func:`delaymult_like_arg2` for more information.
@@ -115,6 +117,8 @@ def delaymult_like_arg2_prealloc(a, v, R, out):
     """
     M = len(a)
     L = len(v)
+    P = out.shape[0]
+    R = (P - L)//(M - 1)
     for m in range(M):
         for l in range(L):
             out[R*m - l + L - 1, l] = a[m]*np.conj(v[l])
@@ -200,4 +204,4 @@ def delaymult_like_arg2(a, v, R=1):
     P = R*M + L - R
     outdtype = np.result_type(a.dtype, v.dtype)
     out = np.zeros((P, L), dtype=outdtype)
-    return delaymult_like_arg2_prealloc(a, v, R, out)
+    return delaymult_like_arg2_prealloc(a, v, out)
