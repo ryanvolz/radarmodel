@@ -430,8 +430,8 @@ def CodeFreqStrided(s, N, M, R=1):
                                                (P, M),
                                                (-spad.itemsize, R*spad.itemsize))
 
-    demodpad = pyfftw.n_byte_align(np.zeros((P, nfft), xydtype), 16)
-    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
+    demodpad = pyfftw.n_byte_align(np.zeros((P, nfft), xydtype), pyfftw.simd_alignment)
+    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), pyfftw.simd_alignment)
     fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
 
     @adjoint_op_dec(s, N, M, R)
@@ -459,8 +459,8 @@ def CodeFreqNumba(s, N, M, R=1):
     # need to include 1/sqrt(N) factor, and only easy place is in s
     s_over_sqrtN = s/np.sqrt(N)
 
-    demodpad = pyfftw.n_byte_align(np.zeros((P, nfft), xydtype), 16)
-    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
+    demodpad = pyfftw.n_byte_align(np.zeros((P, nfft), xydtype), pyfftw.simd_alignment)
+    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), pyfftw.simd_alignment)
     fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
 
     @adjoint_op_dec(s, N, M, R)
@@ -488,8 +488,8 @@ def CodeFreqCython(s, N, M, R=1):
     # ensure that s is C-contiguous as required by the Cython function
     s = np.asarray(s, order='C')
 
-    demodpad = pyfftw.n_byte_align(np.zeros((P, nfft), xydtype), 16)
-    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), 16)
+    demodpad = pyfftw.n_byte_align(np.zeros((P, nfft), xydtype), pyfftw.simd_alignment)
+    x_aligned = pyfftw.n_byte_align(np.zeros_like(demodpad), pyfftw.simd_alignment)
     fft = pyfftw.FFTW(demodpad, x_aligned, threads=_THREADS)
 
     fun = libpoint_adjoint.CodeFreqCython(s, demodpad, x_aligned, fft, step, N, M, R)
