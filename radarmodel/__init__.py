@@ -8,10 +8,13 @@ Models
 .. autosummary::
     :toctree:
 
-    point
+    PointGrid
 
 """
 from . import point
+from . import pointgrid
+
+from .pointgrid import PointGrid
 
 from ._version import get_versions
 __version__ = get_versions()['version']
