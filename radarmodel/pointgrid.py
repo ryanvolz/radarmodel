@@ -63,6 +63,80 @@ def txref_forward(s, x, ifft, y):
     return y
 
 def txref_adjoint_x(y, s, fft, x):
+    r"""Calculate adjoint w.r.t reflectivity of TX-referenced point model.
+
+    This adjoint operation acts as a delay-frequency matched filter
+    assuming that the radar operates according to the corresponding
+    forward model.
+
+    This function implements the equation:
+
+    .. math::
+
+        x[n, p] &= \frac{1}{\sqrt{N}} \sum_m (
+                    e^{-2 \pi i n (R m - p + L - 1)/N}
+                    s^*[R m - p + L - 1]
+                    y[m] ) \\
+                &= \frac{1}{\sqrt{N}} \sum_l (
+                    e^{-2 \pi i n l / N}
+                    s^*[l]
+                    y_R[l + p - (L - 1)] )
+
+    where :math:`y_R` is `y` upsampled by `R` (insert `R`-1 zeros after each
+    original element) for inputs `y` and `s`, and constants `L`, `N`, and `R`.
+
+
+    Parameters
+    ----------
+
+    y : 1-D ndarray, length `M`
+        Complex values representing a measured radar signal (potentially
+        as output by the corresponding forward model).
+
+    s : 1-D ndarray, length `L`
+        Real or complex values giving the transmitted radar signal.
+
+    fft : pyfftw.FFTW object
+        Pre-planned FFTW object for calculating `P` forward FFTs of length
+        `N` for input of shape (`P`, `N`) and dtype the same as `y`.
+
+    x : 2-D ndarray, shape (`P`, `N`) and dtype the same as `y`
+        Array for storing the adjoint's output reflectivity. `P` must equal
+        :math:`P = RM + L - R` for the input lengths `M` and `L` and an
+        integer undersampling ratio `R` which is inferred from that equality.
+
+
+    Returns
+    -------
+
+    x : 2-D ndarray, shape (`P`, `N`) and dtype the same as `y`
+        Delay-frequency matched-filter output, the result of the adjoint
+        operation. The first axis indexes delay, while the second
+        indexes frequency.
+
+
+    See Also
+    --------
+
+    txref_forward : Corresponding forward operator.
+    TxRef : Class for computing the TX-referenced point target grid model.
+    delaymult_like_arg2 : Function that performs part of this calculation.
+    rxref_adjoint_x : Similar adjoint operator, for the RX-referenced model.
+
+
+    Notes
+    -----
+
+    The :math:`1/\sqrt{N}` term is included so that composition with the
+    corresponding forward operator is well-scaled in the sense that the
+    central diagonal entries of the composed Forward-Adjoint operation
+    matrix are equal to the norm of `s`.
+
+    It is necessary to take `N` >= `L` in order to ensure that the operator
+    has a consistent norm (equal to the norm of `s`). In addition, computation
+    is faster when `N` is a power of 2 since it depends on the FFT algorithm.
+
+    """
     delaymult_out = fft.get_input_array()
     N = x.shape[1]
 
@@ -99,6 +173,84 @@ def rxref_forward(s, x, ifft, y):
     return y
 
 def rxref_adjoint_x(y, s, fft, N, x_up):
+    r"""Calculate adjoint w.r.t reflectivity of RX-referenced point model.
+
+    This adjoint operation acts as a delay-frequency matched filter
+    assuming that the radar operates according to the corresponding
+    forward model.
+
+    This function implements the equation:
+
+    .. math::
+
+        x[p, n] = \frac{1}{\sqrt{N}} \sum_m ( e^{-2 \pi i n m / N}
+                                              s^*[R m - p + L - 1]
+                                              y[m] )
+
+    for inputs `y` and `s`, and constants `L`, `N`, and `R`.
+
+
+    Parameters
+    ----------
+
+    y : 1-D ndarray, length `M`
+        Complex values representing a measured radar signal (potentially
+        as output by the corresponding forward model).
+
+    s : 1-D ndarray, length `L`
+        Real or complex values giving the transmitted radar signal.
+
+    fft : pyfftw.FFTW object
+        Pre-planned FFTW object for calculating `P` forward FFTs of length
+        `nfft` for input of shape (`P`, `nfft`) and dtype the same as `y`.
+
+    N : int
+        Number of frequency steps included in the output reflectivity `x`, and
+        hence the length of its second dimension. When `N` is less than `M`,
+        an FFT with a larger length must be used in the calculation, so `nfft`
+        is chosen as the smallest integer multiple of `N` that is greater than
+        `M`. This integer multiple is the frequency subsampling stepsize
+        `step`.
+
+    x_up : 2-D ndarray, shape (`P`, `nfft`)
+        Array for storing the output of the FFT and a superset of the
+        adjoint's output reflectivity. `P` must equal :math:`P = RM + L - R`
+        for the input lengths `M` and `L` and an integer undersampling ratio
+        `R` which is inferred from that equality.
+
+
+    Returns
+    -------
+
+    x : 2-D ndarray, shape (`P`, `N`) and dtype the same as `y`
+        Delay-frequency matched-filter output, the result of the adjoint
+        operation. The first axis indexes delay, while the second
+        indexes frequency. `x` is subsampled from `x_up` according to
+        x = x_up[:, ::step].
+
+    See Also
+    --------
+
+    rxref_forward : Corresponding forward operator.
+    RxRef : Class for computing the RX-referenced point target grid model.
+    delaymult_like_arg1 : Function that performs part of this calculation.
+    txref_adjoint_x : Similar adjoint operator, for the TX-referenced model.
+
+
+    Notes
+    -----
+
+    The :math:`1/\sqrt{N}` term is included so that composition with the
+    corresponding forward operator is well-scaled in the sense that the
+    central diagonal entries of the composed Forward-Adjoint operation
+    matrix are equal to the norm of `s`.
+
+    It is necessary to take `N` >= `L` in order to ensure that the operator
+    has a consistent norm (equal to the norm of `s`). In addition, computation
+    is faster when `nfft` is a power of 2 since it depends on the FFT
+    algorithm.
+
+    """
     delaymult_out = fft.get_input_array()
     nfft = x_up.shape[1]
     step = nfft//N
