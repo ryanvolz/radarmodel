@@ -100,6 +100,9 @@ pygments_style = 'sphinx'
 # generate autodoc summary pages from autosummary directive
 autosummary_generate = True
 
+# show inheritance in from autodoc where appropriate
+autodoc_default_flags = ['show-inheritance']
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

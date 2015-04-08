@@ -1,16 +1,34 @@
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Copyright (c) 2015, 'radarmodel' developers (see AUTHORS file)
 # All rights reserved.
 #
 # Distributed under the terms of the BSD 3-Clause ("BSD New") license.
 #
 # The full license is in the LICENSE file, distributed with this software.
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+
+"""Functions for multiplying two sequences at different relative delays.
+
+.. currentmodule:: radarmodel.delay_multiply
+
+.. autosummary::
+    :toctree:
+
+    delaymult_like_arg1
+    delaymult_like_arg2
+
+    delaymult_like_arg1_prealloc
+    delaymult_like_arg2_prealloc
+
+"""
 
 import numpy as np
 from numba import jit
 
-__all__ = ['delaymult_like_arg1', 'delaymult_like_arg2']
+__all__ = [
+    'delaymult_like_arg1', 'delaymult_like_arg1_prealloc',
+    'delaymult_like_arg2', 'delaymult_like_arg2_prealloc',
+]
 
 @jit(nopython=True, nogil=True)
 def delaymult_like_arg1_prealloc(a, v, out):
@@ -30,7 +48,7 @@ def delaymult_like_arg1_prealloc(a, v, out):
     return out
 
 def delaymult_like_arg1(a, v, R=1):
-    r"""Multiply two 1-D sequences at all overlapping relative delays.
+    r"""Multiply first sequence by all overlapping delays of second sequence.
 
     The second sequence `v` is conjugated and multiplied element-by-element
     with the first sequence at all relative delays where the two can overlap,
@@ -46,7 +64,7 @@ def delaymult_like_arg1(a, v, R=1):
 
         x[R m - l + L - 1, m] = a[m] v^*[l]
 
-    for sequences `a` and `v`, undersampling ratio `R`, and `L` = len(`v`).
+    for sequences `a` and `v`, undersampling ratio `R`, and `L` = ``len(v)``.
 
     The calculation is like a full cross-correlation of the two
     sequences, except that the result is not summed for each delay. Instead, the
@@ -54,7 +72,7 @@ def delaymult_like_arg1(a, v, R=1):
     delay, and the second dimension indexes the values of the *first* sequence
     `a` multiplied by the appropriately delayed values of the second sequence
     `v`. Summing the output over the second axis will give a result equal to
-    :func:`numpy.correlate`(`a`, `v`, mode='full').
+    ``numpy.correlate(a, v, mode='full')``.
 
 
     Parameters
@@ -126,7 +144,7 @@ def delaymult_like_arg2_prealloc(a, v, out):
     return out
 
 def delaymult_like_arg2(a, v, R=1):
-    r"""Multiply two 1-D sequences at all overlapping relative delays.
+    r"""Multiply second sequence by all overlapping delays of first sequence.
 
     The second sequence `v` is conjugated and multiplied element-by-element
     with the first sequence at all relative delays where the two can overlap,
@@ -144,7 +162,7 @@ def delaymult_like_arg2(a, v, R=1):
 
     where :math:`a_R` is `a` upsampled by `R` (insert `R`-1 zeros after each
     original element) for sequences `a` and `v`, undersampling ratio `R`, and
-    `L` = len(`v`).
+    `L` = ``len(v)``.
 
     The calculation is like a full cross-correlation of the two
     sequences, except that the result is not summed for each delay. Instead, the
@@ -152,7 +170,7 @@ def delaymult_like_arg2(a, v, R=1):
     delay, and the second dimension indexes the values of the *second* sequence
     `v` multiplied by the appropriately delayed values of the first sequence
     `a`. Summing the output over the second axis will give a result equal to
-    :func:`numpy.correlate`(`a`, `v`, mode='full').
+    ``numpy.correlate(a, v, mode='full')``.
 
 
     Parameters

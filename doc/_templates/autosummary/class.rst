@@ -1,6 +1,12 @@
-{% extends "!autosummary/class.rst" %}
+{{ name }}
+{{ underline }}
 
-{% block methods %}
+.. currentmodule:: {{ module }}
+
+.. autoclass:: {{ objname }}
+
+
+{% block methods_autosummary %}
 {% if methods %}
 
 ..
@@ -16,7 +22,7 @@
 {% endif %}
 {% endblock %}
 
-{% block attributes %}
+{% block attributes_autosummary %}
 {% if attributes %}
 
 ..

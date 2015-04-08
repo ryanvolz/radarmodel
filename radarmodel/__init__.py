@@ -1,4 +1,4 @@
-"""Radar modeling.
+"""Mathematical radar models, useful for inverting measurements.
 
 .. currentmodule:: radarmodel
 
@@ -8,7 +8,17 @@ Models
 .. autosummary::
     :toctree:
 
-    PointGrid
+    pointgrid
+
+Other
+-----
+
+.. autosummary::
+    :toctree:
+
+    delay_multiply
+    time_varying_conv
+    operator_class
 
 """
 from . import point
