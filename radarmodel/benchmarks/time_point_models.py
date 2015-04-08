@@ -30,16 +30,24 @@ class ModelSuite:
         x = get_random_uniform(model.xshape, model.xydtype)
         y = get_random_uniform(model.yshape, model.xydtype)
 
+        y_out = model.forward(s, x)
+        try:
+            x_out = np.empty(model.xupshape, model.xydtype)
+        except:
+            x_out = np.empty(model.xshape, model.xydtype)
+
         self.model = model
         self.s = s
         self.x = x
+        self.x_out = x_out
         self.y = y
+        self.y_out = y_out
 
     def time_forward(self, *args):
-        self.model.forward(self.s, self.x, self.y)
+        self.model.forward(self.s, self.x, self.y_out)
 
     def time_adjoint_x(self, *args):
-        self.model.adjoint_x(self.y, self.s, self.x)
+        self.model.adjoint_x(self.y, self.s, self.x_out)
 
 def main():
     """Main function that runs point model benchmarks when run as a script."""
