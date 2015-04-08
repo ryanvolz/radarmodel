@@ -9,20 +9,23 @@
 
 
 import numpy as np
-import timeit
 
 from radarmodel import pointgrid
 from radarmodel.util import get_random_uniform, get_random_oncircle
 
 class ModelSuite:
-    param_names = ['model', 'params']
-    params = (['TxRef', 'RxRef'], [
-        dict(L=13, N=16, M=37, R=1, precision=np.double),
-    ])
-    number = 1000
-    repeat = 100
+    param_names = ['params', 'model']
+    params = ([
+        dict(L=13, N=16, M=50, R=1, precision=np.dtype(np.float32)),
+        dict(L=51, N=64, M=500, R=1, precision=np.dtype(np.float32)),
+        dict(L=51, N=64, M=500, R=1, precision=np.dtype(np.float64)),
+        dict(L=51, N=64, M=500, R=3, precision=np.dtype(np.float32)),
+        dict(L=101, N=128, M=2000, R=1, precision=np.dtype(np.float32)),
+        dict(L=101, N=512, M=2000, R=1, precision=np.dtype(np.float32)),
+    ],
+    ['TxRef', 'RxRef'])
 
-    def setup(self, modelname, params):
+    def setup(self, params, modelname):
         cls = getattr(pointgrid, modelname)
         model = cls(**params)
 
@@ -48,10 +51,3 @@ class ModelSuite:
 
     def time_adjoint_x(self, *args):
         self.model.adjoint_x(self.y, self.s, self.x_out)
-
-def main():
-    """Main function that runs point model benchmarks when run as a script."""
-    pass
-
-if __name__ == '__main__':
-    main()
