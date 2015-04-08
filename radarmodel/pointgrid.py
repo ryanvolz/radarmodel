@@ -681,11 +681,20 @@ class PointGridBase(object):
         over the sampling rate of the received signal `y`.
 
     sdtype : dtype
-        Dtype of the transmitted signal `s`.
+        Array dtype of the transmitted signal `s`.
+
+    sshape : tuple
+        Array shape of the transmitted signal `s`, ``(L,)``.
+
+    xshape : tuple
+        Array shape of the target reflectivities `x`, ``(P, N)``.
 
     xydtype : dtype
-        Dtype of the received signal `y` and target reflectivities `x`. This
-        dtype is complex but with the same precision as `sdtype`.
+        Array dtype of the target reflectivities `x` and received signal `y`.
+        This dtype is complex but with the same precision as `sdtype`.
+
+    yshape : tuple
+        Array shape of the received signal `y`, ``(M,)``.
 
     """
     def __init__(self, L, M, N, R, precision):
@@ -722,6 +731,10 @@ class PointGridBase(object):
         self.sdtype = precision
 
         self.P = R*M + L - R
+
+        self.sshape = (L,)
+        self.xshape = (P, N)
+        self.yshape = (M,)
 
         # x and y are always complex, with given precision of s
         self.xydtype = np.result_type(precision, np.complex64)
@@ -892,9 +905,9 @@ class FixedTx(LinearOperator):
 
         self._init_from_model(model)
 
-        inshape = (model.P, model.N)
+        inshape = model.xshape
         indtype = model.xydtype
-        outshape = (model.M,)
+        outshape = model.yshape
         outdtype = model.xydtype
 
         super(FixedTx, self).__init__(
@@ -953,9 +966,9 @@ class FixedReflectivity(LinearOperator):
 
         self._xtime = reflectivity_freq2time(x, self._ifft)
 
-        inshape = (model.L,)
+        inshape = model.sshape
         indtype = model.sdtype
-        outshape = (model.M,)
+        outshape = model.yshape
         outdtype = model.xydtype
 
         super(FixedReflectivity, self).__init__(
@@ -1010,13 +1023,13 @@ class TxRef(PointGridBase):
 
     def forward(self, s, x, y=None):
         if y is None:
-            y = np.empty(self.M, self.xydtype)
+            y = np.empty(self.yshape, self.xydtype)
         return txref_forward(s, x, self._ifft, y)
     forward.__doc__ = txref_forward.__doc__
 
     def adjoint_x(self, y, s, x=None):
         if x is None:
-            x = np.empty((self.P, self.N), self.xydtype)
+            x = np.empty(self.xshape, self.xydtype)
         return txref_adjoint_x(y, s, self._fft, x)
     adjoint_x.__doc__ = txref_adjoint_x.__doc__
 
@@ -1076,6 +1089,9 @@ class RxRef(PointGridBase):
     step : int
         Frequency subsampling stepsize, the ratio of `nfft` to `N`.
 
+    xupshape : tuple
+        Array shape for the upsampled reflectivities `x_up`, ``(P, nfft)``.
+
 
     See Also
     --------
@@ -1096,6 +1112,9 @@ class RxRef(PointGridBase):
         super(RxRef, self).__init__(
             L, M, N, R, precision,
         )
+
+        self.xupshape = (self.P, self.nfft)
+
     __init__.__doc__ = PointGridBase.__init__.__doc__
 
     def _create_fft_plan(self):
@@ -1121,13 +1140,13 @@ class RxRef(PointGridBase):
 
     def forward(self, s, x, y=None):
         if y is None:
-            y = np.empty(self.M, self.xydtype)
+            y = np.empty(self.yshape, self.xydtype)
         return rxref_forward(s, x, self._ifft, y)
     forward.__doc__ = rxref_forward.__doc__
 
     def adjoint_x(self, y, s, x_up=None):
         if x_up is None:
-            x_up = np.empty((self.P, self.nfft), self.xydtype)
+            x_up = np.empty(self.xupshape, self.xydtype)
         return rxref_adjoint_x(y, s, self._fft, self.N, x_up)
     adjoint_x.__doc__ = rxref_adjoint_x.__doc__
 
@@ -1152,9 +1171,9 @@ class RxRefFixedTx(FixedTx):
 
         self._init_from_model(model)
 
-        inshape = (model.P, model.nfft)
+        inshape = model.xupshape
         indtype = model.xydtype
-        outshape = (model.M,)
+        outshape = model.yshape
         outdtype = model.xydtype
 
         super(FixedTx, self).__init__(
