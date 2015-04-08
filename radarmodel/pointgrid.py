@@ -733,7 +733,7 @@ class PointGridBase(object):
         self.P = R*M + L - R
 
         self.sshape = (L,)
-        self.xshape = (P, N)
+        self.xshape = (self.P, N)
         self.yshape = (M,)
 
         # x and y are always complex, with given precision of s
@@ -1106,8 +1106,8 @@ class RxRef(PointGridBase):
     def __init__(self, L, M, N, R=1, precision=np.double):
         # when N < M, need to take FFT with nfft >= M so we don't lose data
         # then subsample to get our N points that we desire
-        self.step = rxlen // fftlen + 1
-        self.nfft = fftlen*self.step
+        self.step = M // N + 1
+        self.nfft = N*self.step
 
         super(RxRef, self).__init__(
             L, M, N, R, precision,
