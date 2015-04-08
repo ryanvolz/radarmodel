@@ -35,10 +35,10 @@ class ModelSuite:
         self.x = x
         self.y = y
 
-    def time_forward(self):
+    def time_forward(self, *args):
         self.model.forward(self.s, self.x, self.y)
 
-    def time_adjoint_x(self):
+    def time_adjoint_x(self, *args):
         self.model.adjoint_x(self.y, self.s, self.x)
 
 def main():
