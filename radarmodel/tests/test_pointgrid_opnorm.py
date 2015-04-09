@@ -69,13 +69,12 @@ def check_opnorm(cls, L, M, N, R, sdtype):
     def call():
         Anorm, Asnorm, v = opnorm(op, reltol=1e-10, abstol=1e-8, maxits=100)
         np.testing.assert_allclose(Anorm, true_Anorm, rtol=1e-4, atol=1e-2,
-                          err_msg=err_msg.format('forward', Anorm, true_Anorm))
+            err_msg=err_msg.format('forward', Anorm, true_Anorm))
         np.testing.assert_allclose(Asnorm, true_Asnorm, rtol=1e-4, atol=1e-2,
-                        err_msg=err_msg.format('adjoint', Asnorm, true_Asnorm))
+            err_msg=err_msg.format('adjoint', Asnorm, true_Asnorm))
 
-    call.description = '{6}: s={0}({1}), x={2}({3}), N={4}, R={5}'.format(
-        np.dtype(sdtype).str, L, np.dtype(op.indtype).str, M, N, R,
-        cls.__name__,
+    call.description = '{5}: L={0}, M={1}, N={2}, R={3}, {4}'.format(
+        L, M, N, R, np.dtype(sdtype).str, cls.__name__,
     )
 
     return call

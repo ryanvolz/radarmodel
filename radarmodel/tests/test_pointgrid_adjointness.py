@@ -62,9 +62,8 @@ def check_adjointness(cls, L, M, N, R, sdtype):
             )
         )
 
-    call.description = '{6}: s={0}({1}), x={2}({3}), N={4}, R={5}'.format(
-        np.dtype(sdtype).str, L, np.dtype(op.indtype).str, M, N, R,
-        cls.__name__,
+    call.description = '{5}: L={0}, M={1}, N={2}, R={3}, {4}'.format(
+        L, M, N, R, np.dtype(sdtype).str, cls.__name__,
     )
 
     return call
