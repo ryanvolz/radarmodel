@@ -9,8 +9,6 @@
 
 from __future__ import division
 import numpy as np
-import numba
-from numba.decorators import jit, autojit
 import scipy.sparse as sparse
 import pyfftw
 import multiprocessing
@@ -21,9 +19,8 @@ from .common import model_dec
 
 _THREADS = multiprocessing.cpu_count()
 
-__all__ = ['DirectSum', 'DirectSumCython', 'DirectSumNumba',
-           'FreqCodeSparse', 'CodeFreqStrided', 'CodeFreqCython',
-           'CodeFreqNumba']
+__all__ = ['DirectSum', 'DirectSumCython', 'FreqCodeSparse',
+           'CodeFreqStrided', 'CodeFreqCython', 'CodeFreqNumba']
 
 def adjoint_factory_dec(fun):
     doc = r"""Construct an adjoint point model function.
@@ -245,46 +242,6 @@ def DirectSum(s, N, M, R=1):
         return x
 
     return direct_sum
-
-@adjoint_factory_dec
-def DirectSumNumba(s, N, M, R=1):
-    L = len(s)
-    P = R*M + L - R
-    s_conj = s.conj()
-    # use precision (single or double) of s
-    # input and output are always complex
-    xydtype = np.result_type(s.dtype, np.complex64)
-
-    stype = numba.__getattribute__(str(s.dtype))
-    xytype = numba.__getattribute__(str(xydtype))
-
-    dftmat = np.exp(-2*np.pi*1j*np.arange(M)*np.arange(N)[:, None]/N)/np.sqrt(N)
-    dftmat = dftmat.astype(xydtype) # use precision of output
-
-    @jit(argtypes=[xytype[::1]],
-         locals=dict(xnp=xytype))
-    def direct_sum_numba(y):
-        x = np.zeros((N, P), dtype=y.dtype)
-        for n in range(N):
-            for p in range(P):
-                xnp = 0
-                # constraints on m from bounds of s:
-                # Rm - p + L - 1 >= 0:
-                #       m >= ceil((p - L + 1)/R) --> m >= floor((p - L)/R) + 1
-                # Rm - p + L - 1 <= L - 1:
-                #       m <= floor(p/R)
-                # add R before division so calculation of (p - L)//R + 1 <= 0
-                # when it should be with cdivision semantics (floor toward 0)
-                mstart = max(0, (p - L + R)//R)
-                mstop = min(M, p//R + 1)
-                for m in range(mstart, mstop):
-                    # downshift modulate signal by frequency given by p
-                    # then correlate with conjugate of transmitted signal
-                    xnp += s_conj[R*m - p + L - 1]*dftmat[n, m]*y[m]
-                x[n, p] = xnp
-        return x
-
-    return adjoint_op_dec(s, N, M, R)(direct_sum_numba)
 
 @adjoint_factory_dec
 def DirectSumCython(s, N, M, R=1):

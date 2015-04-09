@@ -185,7 +185,6 @@ measure_adjoint = measure_factory(
      point_adjoint.CodeFreqNumba,
      point_adjoint.CodeFreqStrided],
     [point_adjoint.DirectSumCython,
-     point_adjoint.DirectSumNumba,
      point_adjoint.FreqCodeSparse]
     )
 
@@ -194,7 +193,6 @@ fastest_adjoint = fastest_factory(
      point_adjoint.CodeFreqNumba,
      point_adjoint.CodeFreqStrided],
     [point_adjoint.DirectSumCython,
-     point_adjoint.DirectSumNumba,
      point_adjoint.FreqCodeSparse]
     )
 
