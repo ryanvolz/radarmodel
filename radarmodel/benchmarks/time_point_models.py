@@ -34,10 +34,7 @@ class ModelSuite:
         y = get_random_uniform(model.yshape, model.xydtype)
 
         y_out = model.forward(s, x)
-        try:
-            x_out = np.empty(model.xupshape, model.xydtype)
-        except:
-            x_out = np.empty(model.xshape, model.xydtype)
+        x_out = model.adjoint_x(y, s)
 
         self.model = model
         self.s = s
