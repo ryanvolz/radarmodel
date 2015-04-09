@@ -45,7 +45,7 @@ def adjointness_error(op, its=100):
 
     return errs
 
-def check_adjointness(cls, L, N, M, R, sdtype):
+def check_adjointness(cls, L, M, N, R, sdtype):
     s = get_random_oncircle((L,), sdtype)
     s = s/np.linalg.norm(s)
 
@@ -69,20 +69,20 @@ def check_adjointness(cls, L, N, M, R, sdtype):
 
     return call
 
-def test_pointgrid_adjointness():
+def test_adjointness():
     clss = (TxRef, RxRef)
     Ls = (13, 13, 13)
-    Ns = (13, 64, 27)
     Ms = (37, 37, 10)
+    Ns = (13, 64, 27)
     Rs = (1, 2, 3)
     sdtypes = (np.float32, np.complex128)
 
     np.random.seed(1)
 
-    for cls, (L, N, M), R, sdtype in itertools.product(
-        clss, zip(Ls, Ns, Ms), Rs, sdtypes
+    for cls, (L, M, N), R, sdtype in itertools.product(
+        clss, zip(Ls, Ms, Ns), Rs, sdtypes
     ):
-        callable_test = check_adjointness(cls, L, N, M, R, sdtype)
+        callable_test = check_adjointness(cls, L, M, N, R, sdtype)
         callable_test.description = 'test_pointgrid_adjointness: '\
                                         + callable_test.description
         yield callable_test
