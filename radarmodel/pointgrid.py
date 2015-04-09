@@ -530,7 +530,7 @@ def rxref_forward(s, x, ifft, y):
 
     return y
 
-def rxref_adjoint_x(y, s, fft, N, x_up):
+def rxref_adjoint_x(y, s, fft, x):
     r"""Calculate adjoint w.r.t reflectivity of RX-referenced point model.
 
     This adjoint operation acts as a delay-frequency matched filter
@@ -561,20 +561,15 @@ def rxref_adjoint_x(y, s, fft, N, x_up):
     fft : pyfftw.FFTW object
         Pre-planned FFTW object for calculating `P` forward FFTs of length
         `nfft` for input of shape (`P`, `nfft`) and dtype the same as `y`.
+        When `N` is less than `M`, an FFT with a larger length must be used in
+        the calculation, so `nfft` is chosen as the smallest integer multiple
+        of `N` that is greater than `M`. This integer multiple is the
+        frequency subsampling stepsize `step`.
 
-    N : int
-        Number of frequency steps included in the output reflectivity `x`, and
-        hence the length of its second dimension. When `N` is less than `M`,
-        an FFT with a larger length must be used in the calculation, so `nfft`
-        is chosen as the smallest integer multiple of `N` that is greater than
-        `M`. This integer multiple is the frequency subsampling stepsize
-        `step`.
-
-    x_up : 2-D ndarray, shape (`P`, `nfft`)
-        Array for storing the output of the FFT and a superset of the
-        adjoint's output reflectivity. `P` must equal :math:`P = RM + L - R`
-        for the input lengths `M` and `L` and an integer undersampling ratio
-        `R` which is inferred from that equality.
+    x : 2-D ndarray, shape (`P`, `N`) and dtype the same as `y`
+        Array for storing the adjoint's output reflectivity. `P` must equal
+        :math:`P = RM + L - R` for the input lengths `M` and `L` and an
+        integer undersampling ratio `R` which is inferred from that equality.
 
 
     Returns
@@ -583,8 +578,7 @@ def rxref_adjoint_x(y, s, fft, N, x_up):
     x : 2-D ndarray, shape (`P`, `N`) and dtype the same as `y`
         Delay-frequency matched-filter output, the result of the adjoint
         operation. The first axis indexes delay, while the second
-        indexes frequency. `x` is subsampled from `x_up` according to
-        x = x_up[:, ::step].
+        indexes frequency.
 
     See Also
     --------
@@ -610,7 +604,9 @@ def rxref_adjoint_x(y, s, fft, N, x_up):
 
     """
     delaymult_out = fft.get_input_array()
+    x_up = fft.get_output_array()
     nfft = x_up.shape[1]
+    N = x.shape[1]
     step = nfft//N
 
     # need to include 1/sqrt(N) factor for balanced forward/adjoint
@@ -620,10 +616,15 @@ def rxref_adjoint_x(y, s, fft, N, x_up):
     M = len(y)
     delaymult_like_arg1_prealloc(y, s_over_sqrtN, delaymult_out[:, :M])
 
-    fft(output_array=x_up) # input is delaymult_out
+    if step == 1:
+        # x_up and x are the same size, save a copy by writing directly to x
+        fft(output_array=x) # input is delaymult_out
+    else:
+        fft() # input is delaymult_out, output is x_up
+        # subsample to get desired output size, and copy into x
+        x[...] = x_up[:, ::step]
 
-    # subsample to get desired output size
-    return x_up[:, ::step]
+    return x
 
 
 # ****************************************************************************
@@ -733,7 +734,7 @@ class PointGridBase(object):
         self.P = R*M + L - R
 
         self.sshape = (L,)
-        self.xshape = (P, N)
+        self.xshape = (self.P, N)
         self.yshape = (M,)
 
         # x and y are always complex, with given precision of s
@@ -1089,9 +1090,6 @@ class RxRef(PointGridBase):
     step : int
         Frequency subsampling stepsize, the ratio of `nfft` to `N`.
 
-    xupshape : tuple
-        Array shape for the upsampled reflectivities `x_up`, ``(P, nfft)``.
-
 
     See Also
     --------
@@ -1106,14 +1104,12 @@ class RxRef(PointGridBase):
     def __init__(self, L, M, N, R=1, precision=np.double):
         # when N < M, need to take FFT with nfft >= M so we don't lose data
         # then subsample to get our N points that we desire
-        self.step = rxlen // fftlen + 1
-        self.nfft = fftlen*self.step
+        self.step = M // N + 1
+        self.nfft = N*self.step
 
         super(RxRef, self).__init__(
             L, M, N, R, precision,
         )
-
-        self.xupshape = (self.P, self.nfft)
 
     __init__.__doc__ = PointGridBase.__init__.__doc__
 
@@ -1144,10 +1140,10 @@ class RxRef(PointGridBase):
         return rxref_forward(s, x, self._ifft, y)
     forward.__doc__ = rxref_forward.__doc__
 
-    def adjoint_x(self, y, s, x_up=None):
-        if x_up is None:
-            x_up = np.empty(self.xupshape, self.xydtype)
-        return rxref_adjoint_x(y, s, self._fft, self.N, x_up)
+    def adjoint_x(self, y, s, x=None):
+        if x is None:
+            x = np.empty(self.xshape, self.xydtype)
+        return rxref_adjoint_x(y, s, self._fft, x)
     adjoint_x.__doc__ = rxref_adjoint_x.__doc__
 
     def adjoint_s(self, y, x, s=None):
@@ -1171,7 +1167,7 @@ class RxRefFixedTx(FixedTx):
 
         self._init_from_model(model)
 
-        inshape = model.xupshape
+        inshape = model.xshape
         indtype = model.xydtype
         outshape = model.yshape
         outdtype = model.xydtype
@@ -1184,7 +1180,7 @@ class RxRefFixedTx(FixedTx):
         return rxref_forward(self.s, x, self._ifft, y)
 
     def _adjoint(self, y, x):
-        return rxref_adjoint_x(y, self.s, self._fft, self.model.N, x)
+        return rxref_adjoint_x(y, self.s, self._fft, x)
 
 class RxRefFixedReflectivity(FixedReflectivity):
     """
