@@ -9,8 +9,6 @@
 
 from __future__ import division
 import numpy as np
-import numba
-from numba.decorators import jit, autojit
 import scipy.sparse as sparse
 import pyfftw
 import multiprocessing
