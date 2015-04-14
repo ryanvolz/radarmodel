@@ -81,7 +81,6 @@ array([ 0.00000000+0.j        ,  0.00000000+0.j        ,
 
 import numpy as np
 import pyfftw
-import multiprocessing
 
 from .delay_multiply import (
     delaymult_like_arg1_prealloc,
@@ -92,8 +91,6 @@ from .time_varying_conv import (
     tvconv_by_output_prealloc,
 )
 from .operator_class import LinearOperator
-
-_THREADS = multiprocessing.cpu_count()
 
 __all__ = [
     'PointGrid',
@@ -758,7 +755,7 @@ class PointGridBase(object):
             np.zeros_like(delaymult_out),
             pyfftw.simd_alignment
         )
-        fft = pyfftw.FFTW(delaymult_out, fft_out, threads=_THREADS)
+        fft = pyfftw.FFTW(delaymult_out, fft_out)
 
         return fft
 
@@ -771,8 +768,7 @@ class PointGridBase(object):
             np.zeros_like(x),
             pyfftw.simd_alignment
         )
-        ifft = pyfftw.FFTW(x, ifft_out, direction='FFTW_BACKWARD',
-                           threads=_THREADS)
+        ifft = pyfftw.FFTW(x, ifft_out, direction='FFTW_BACKWARD')
 
         return ifft
 
@@ -1122,7 +1118,7 @@ class RxRef(PointGridBase):
             np.zeros_like(delaymult_out),
             pyfftw.simd_alignment
         )
-        fft = pyfftw.FFTW(delaymult_out, fft_out, threads=_THREADS)
+        fft = pyfftw.FFTW(delaymult_out, fft_out)
 
         return fft
 
