@@ -35,7 +35,7 @@ def get_config():
     # _version.py
     cfg = VersioneerConfig()
     cfg.VCS = "git"
-    cfg.style = ""
+    cfg.style = "pep440"
     cfg.tag_prefix = "v"
     cfg.parentdir_prefix = "radarmodel-"
     cfg.versionfile_source = "radarmodel/_version.py"
