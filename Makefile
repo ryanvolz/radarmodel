@@ -14,11 +14,14 @@ clean:
 	-$(PYTHON) setup.py clean
 	make -C doc clean
 
-clean_build:
+clean_build: clean_egginfo
 	-$(PYTHON) setup.py clean --all
 
 clean_coverage:
 	-rm -rf coverage .coverage
+
+clean_egginfo:
+	-rm -rf "$(PACKAGE).egg-info"
 
 clean_inplace:
 	-find . -name '*.py[cdo]' -exec rm {} \;
@@ -44,7 +47,7 @@ cython_annotate:
 cython_force:
 	$(PYTHON) setup.py cython
 
-dist: cython
+dist: cython clean_egginfo
 	$(PYTHON) setup.py sdist
 
 distclean: clean_build clean_inplace clean_sphinxbuild
@@ -74,3 +77,6 @@ test_code: cython inplace
 
 test_coverage: cython inplace clean_coverage
 	$(PYTHON) setup.py nosetests --nocapture --verbosity=2 --with-coverage
+
+wheel: cython clean_egginfo
+	$(PYTHON) setup.py bdist_wheel

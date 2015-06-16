@@ -7,10 +7,11 @@
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
 
-import os
-import codecs
-import copy
 from setuptools import setup, Extension, Command, find_packages
+# to use a consistent encoding
+from codecs import open
+from os import path
+import copy
 import numpy as np
 
 import versioneer
@@ -28,13 +29,13 @@ def no_cythonize(extensions, **_ignore):
     for extension in dupextensions:
         sources = []
         for sfile in extension.sources:
-            path, ext = os.path.splitext(sfile)
+            pth, ext = path.splitext(sfile)
             if ext in ('.pyx', '.py'):
                 if extension.language == 'c++':
                     ext = '.cpp'
                 else:
                     ext = '.c'
-                sfile = path + ext
+                sfile = pth + ext
             sources.append(sfile)
         extension.sources[:] = sources
     return dupextensions
@@ -112,15 +113,16 @@ except ImportError:
 else:
     cmdclass['build_sphinx'] = BuildDoc
 
+here = path.abspath(path.dirname(__file__))
+
 # Get the long description from the relevant file
-# Use codecs.open for Python 2 compatibility
-with codecs.open('README.rst', encoding='utf-8') as f:
+with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
     name='radarmodel',
     version=versioneer.get_version(),
-    description='Radar Modeling',
+    description='Mathematical radar models useful for inverting radar measurements',
     long_description=long_description,
 
     url='http://github.com/ryanvolz/radarmodel',
@@ -139,16 +141,17 @@ setup(
         'Programming Language :: Cython',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
         'Topic :: Scientific/Engineering',
     ],
 
-    keywords='radar model',
+    keywords='radar model inverse inversion',
 
     packages=find_packages(),
     setup_requires=['numpy'],
     install_requires=['numba', 'numpy', 'pyFFTW', 'scipy'],
     extras_require={
-        'develop': ['Cython>=0.17', 'flake8', 'nose', 'pylint'],
+        'develop': ['Cython>=0.17', 'flake8', 'nose', 'pylint', 'twine', 'wheel'],
         'doc': ['numpydoc', 'sphinx'],
     },
     cmdclass=cmdclass,
