@@ -6,7 +6,7 @@ PYTHON ?= python
 
 PACKAGE = radarmodel
 
-.PHONY: all clean clean_build clean_coverage clean_inplace clean_sphinxbuild code_analysis code_check cython cython_annotate cython_force dist distclean doc doc_force in inplace inplace_force pdf test test_code test_coverage
+.PHONY: all clean clean_build clean_coverage clean_inplace clean_sphinxbuild code_analysis code_check dist distclean doc doc_force in inplace inplace_force pdf test test_code test_coverage
 
 all: clean inplace test
 
@@ -38,16 +38,7 @@ code_check:
 	flake8 $(PACKAGE) | grep -v __init__ | grep -v _version
 	pylint --errors-only --output-format colorized --extension-pkg-whitelist=numpy $(PACKAGE)
 
-cython:
-	$(PYTHON) setup.py cython --timestamps
-
-cython_annotate:
-	$(PYTHON) setup.py cython --annotate
-
-cython_force:
-	$(PYTHON) setup.py cython
-
-dist: cython clean_egginfo
+dist: clean_egginfo
 	$(PYTHON) setup.py sdist
 
 distclean: clean_build clean_inplace clean_sphinxbuild
@@ -60,10 +51,10 @@ doc_force: inplace
 	$(PYTHON) setup.py build_sphinx --fresh-env
 
 in: inplace # just a shortcut
-inplace: cython
+inplace:
 	$(PYTHON) setup.py build_ext --inplace
 
-inplace_force: cython
+inplace_force:
 	$(PYTHON) setup.py build_ext --inplace --force
 
 pdf:
@@ -72,11 +63,11 @@ pdf:
 
 test: test_code
 
-test_code: cython inplace
+test_code: inplace
 	$(PYTHON) setup.py nosetests --nocapture --verbosity=2
 
-test_coverage: cython inplace clean_coverage
+test_coverage: inplace clean_coverage
 	$(PYTHON) setup.py nosetests --nocapture --verbosity=2 --with-coverage
 
-wheel: cython clean_egginfo
+wheel: clean_egginfo
 	$(PYTHON) setup.py bdist_wheel
