@@ -2,7 +2,8 @@ package:
   name: radarmodel
 
 source:
-  git_url: https://github.com/ryanvolz/radarmodel.git
+  path: ../
+  #git_url: https://github.com/ryanvolz/radarmodel.git
 
 requirements:
   build:
