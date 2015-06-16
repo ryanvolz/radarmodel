@@ -1,18 +1,22 @@
 {% extends "setuptools.yaml" %}
 
-{% block requirements %}
+{% block build -%}
 
+{%- endblock %}
+
+{% block requirements %}
 requirements:
   build:
-    - numpy
     - python
     - setuptools
+    {% for req in data.get('setup_requires', []) -%}
+    - {{req}}
+    {% endfor %}
   run:
-    - numba <=0.11.1
-    - numpy
-    - pyfftw
     - python
     - setuptools
-    - scipy
+    {% for req in data.get('install_requires', []) -%}
+    - {{req}}
+    {% endfor %}
 
 {% endblock %}
