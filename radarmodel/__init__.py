@@ -1,4 +1,4 @@
-"""Mathematical radar models, useful for inverting measurements.
+"""Mathematical radar models useful for inverting radar measurements.
 
 .. currentmodule:: radarmodel
 
@@ -21,7 +21,6 @@ Other
     operator_class
 
 """
-from . import point
 from . import pointgrid
 
 from .pointgrid import PointGrid
