@@ -15,12 +15,6 @@ import numpy as np
 
 import versioneer
 
-versioneer.VCS = 'git'
-versioneer.versionfile_source = 'radarmodel/_version.py'
-versioneer.versionfile_build = 'radarmodel/_version.py'
-versioneer.tag_prefix = 'v' # tags are like v1.2.0
-versioneer.parentdir_prefix = 'radarmodel-' # dirname like 'radarmodel-1.2.0'
-
 try:
     from Cython.Build import cythonize
     from Cython.Compiler.Options import parse_directive_list
