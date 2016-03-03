@@ -42,9 +42,9 @@ def opnorm(op, reltol=1e-8, abstol=1e-6, maxits=100, printrate=None):
         delta_a = abs(norm_a - norm_a0)
 
         if printrate is not None and (k % printrate) == 0:
-            print('Iteration {0}, forward norm: {1}, '
-                  + 'adjoint norm: {2}'.format(k, norm_f, norm_a)
-            )
+            s = 'Iteration {0}, forward norm: {1}, adjoint norm: {2}'
+            s = s.format(k, norm_f, norm_a)
+            print(s)
         if (delta_f < abstol + reltol*max(norm_f, norm_f0)
             and delta_a < abstol + reltol*max(norm_a, norm_a0)):
             break
