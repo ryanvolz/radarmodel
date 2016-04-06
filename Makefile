@@ -44,10 +44,10 @@ dist: clean_egginfo
 distclean: clean_build clean_inplace clean_sphinxbuild
 	make -C doc distclean
 
-doc:
+doc: inplace
 	make -C doc html
 
-doc_force:
+doc_force: inplace
 	make -C doc distclean
 	make -C doc html
 
