@@ -2,7 +2,7 @@
 # Copyright (c) 2015, 'radarmodel' developers (see AUTHORS file)
 # All rights reserved.
 #
-# Distributed under the terms of the BSD 3-Clause ("BSD New") license.
+# Distributed under the terms of the MIT license.
 #
 # The full license is in the LICENSE file, distributed with this software.
 #-----------------------------------------------------------------------------
@@ -34,13 +34,13 @@ setup(
     author='Ryan Volz',
     author_email='ryan.volz@gmail.com',
 
-    license='BSD 3-Clause ("BSD New")',
+    license='MIT',
 
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering',
