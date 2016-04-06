@@ -1,5 +1,3 @@
-$PYTHON setup.py cython
-$PYTHON setup.py build
 $PYTHON setup.py install --single-version-externally-managed --record=record.txt
 # automatically get version from _version.py
 cd $PKG_NAME

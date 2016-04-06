@@ -9,15 +9,12 @@ requirements:
   build:
     - python
     - setuptools
-    - cython
-    - numpy
   run:
     - python
     - setuptools
-    - numba
+    - rkl
     - numpy
     - pyfftw
-    - scipy
 
 test:
   imports:
@@ -25,5 +22,5 @@ test:
 
 about:
   home: http://github.com/ryanvolz/radarmodel
-  license: BSD 3-Clause ("BSD New")
+  license: MIT
   summary: Mathematical radar models useful for inverting radar measurements
