@@ -44,11 +44,12 @@ dist: clean_egginfo
 distclean: clean_build clean_inplace clean_sphinxbuild
 	make -C doc distclean
 
-doc: inplace
-	$(PYTHON) setup.py build_sphinx
+doc:
+	make -C doc html
 
-doc_force: inplace
-	$(PYTHON) setup.py build_sphinx --fresh-env
+doc_force:
+	make -C doc distclean
+	make -C doc html
 
 in: inplace # just a shortcut
 inplace:
@@ -64,10 +65,10 @@ pdf:
 test: test_code
 
 test_code: inplace
-	$(PYTHON) setup.py nosetests --nocapture --verbosity=2
+	nosetests --nocapture --verbosity=2
 
 test_coverage: inplace clean_coverage
-	$(PYTHON) setup.py nosetests --nocapture --verbosity=2 --with-coverage
+	nosetests --nocapture --verbosity=2 --with-coverage
 
 wheel: clean_egginfo
 	$(PYTHON) setup.py bdist_wheel

@@ -1,4 +1,5 @@
-recursive-include radarmodel *.pyx
+include AUTHORS
+include CHANGES.rst
 include LICENSE
 include README.rst
 include versioneer.py

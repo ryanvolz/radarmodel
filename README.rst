@@ -7,37 +7,15 @@ Mathematical radar models useful for inverting radar measurements.
 Dependencies
 ============
 
+* rkl
+* numpy
+* pyFFTW
 
 
 
 Installation
 ============
 
-
-
-
-Reporting Bugs
-==============
-
-
-
-
-Development
-===========
-
-Repository
-----------
-
-
-
-
-Testing
--------
-
-
-
-
-Contributing
-------------
-
-See CONTRIBUTING.rst for more information about contributing to this project.
+* git clone https://github.com/ryanvolz/radarmodel.git
+* cd radarmodel
+* python setup.py install

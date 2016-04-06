@@ -16,8 +16,6 @@ Other
 .. autosummary::
     :toctree:
 
-    delay_multiply
-    time_varying_conv
     operator_class
 
 """

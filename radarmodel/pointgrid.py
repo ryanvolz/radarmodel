@@ -82,11 +82,11 @@ array([ 0.00000000+0.j        ,  0.00000000+0.j        ,
 import numpy as np
 import pyfftw
 
-from .delay_multiply import (
+from rkl.delay_multiply import (
     delaymult_like_arg1_prealloc,
     delaymult_like_arg2_prealloc,
 )
-from .time_varying_conv import (
+from rkl.time_varying_conv import (
     tvconv_by_input_prealloc,
     tvconv_by_output_prealloc,
 )
