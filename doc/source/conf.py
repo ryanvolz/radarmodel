@@ -20,16 +20,21 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.0' # numpydoc requires sphinx >= 1.0
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
+    'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.pngmath',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.mathjax',
     'numpydoc',
 ]
 
@@ -47,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'radarmodel'
-copyright = u'2014, Ryan Volz'
+copyright = u'2014, `radarmodel` developers (see AUTHORS file)'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -107,7 +112,7 @@ autodoc_default_flags = ['show-inheritance']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'sphinxdoc'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -185,7 +190,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'radarmodel'
+htmlhelp_basename = 'radarmodeldoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -206,7 +211,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
   ('index', 'radarmodel.tex', u'radarmodel Documentation',
-   u'Ryan Volz', 'manual'),
+   u'radarmodel developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -236,7 +241,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'radarmodel', u'radarmodel Documentation',
-     [u'Ryan Volz'], 1)
+     [u'radarmodel developers'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -250,7 +255,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'radarmodel', u'radarmodel Documentation',
-   u'Ryan Volz', 'radarmodel', 'One line description of project.',
+   u'radarmodel developers', 'radarmodel',
+   'Mathematical radar models useful for inverting radar measurements.',
    'Miscellaneous'),
 ]
 
@@ -265,3 +271,9 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {
+    'python': ('http://docs.python.org/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+}

@@ -1,6 +1,8 @@
-######################################
 Welcome to radarmodel's documentation!
-######################################
+======================================
+
+`radarmodel` provides mathematical radar models useful for inverting radar measurements.
+
 
 Contents:
 
@@ -10,9 +12,8 @@ Contents:
     reference
 
 
-##################
 Indices and tables
-##################
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`
