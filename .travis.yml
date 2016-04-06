@@ -10,7 +10,7 @@ install:
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
     else
-      wget http://repo.continuum.io/miniconda/Miniconda3-3.4.2-Linux-x86_64.sh -O miniconda.sh;
+      wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -19,9 +19,7 @@ install:
 
   # install from conda defaults and select repositories for non-anaconda packages
   - conda config --add channels 'defaults'
-  - conda config --add channels 'richli' # pyfftw and fftw
-  - conda config --add channels 'renemilk' # glumpy
-  - conda config --add channels 'pandas' # bottleneck
+  - conda config --add channels 'conda-forge' # pyfftw and fftw
 
   - conda update conda
   # Useful for debugging any issues with conda
@@ -30,14 +28,14 @@ install:
   # build package from conda recipe
   - conda install conda-build jinja2 setuptools
   - export CONDA_PY="${TRAVIS_PYTHON_VERSION//./}"
-  - export CONDA_NPY=17
+  - export CONDA_NPY=110
   - conda build --no-test --no-binstar-upload conda.recipe/
 
   # change to conda build's source directory (so we can re-use built extensions for inplace)
   - cd "$HOME/miniconda/conda-bld/work"
 
   # install into test environment with additional test dependencies
-  - conda create -n test-environment --use-local radarmodel cython nose python=$TRAVIS_PYTHON_VERSION
+  - conda create -n test-environment --use-local radarmodel nose python=$TRAVIS_PYTHON_VERSION
   - source activate test-environment
 
 script: make test
